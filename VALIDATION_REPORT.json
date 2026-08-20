@@ -1,0 +1,48 @@
+{
+  "project": "IMPOSSIBLE LEVELS",
+  "checks": [
+    {
+      "name": "C# source files",
+      "passed": true,
+      "detail": "18 files found"
+    },
+    {
+      "name": "Level thumbnails",
+      "passed": true,
+      "detail": "30 PNG files found"
+    },
+    {
+      "name": "UI icon set",
+      "passed": true,
+      "detail": "5 UI icons found"
+    },
+    {
+      "name": "Required release documents",
+      "passed": true,
+      "detail": "9/9 present"
+    },
+    {
+      "name": "Progression hooks",
+      "passed": true,
+      "detail": "procedural board saves completion"
+    },
+    {
+      "name": "Touch input hooks",
+      "passed": true,
+      "detail": "Android touch path present"
+    },
+    {
+      "name": "Offline monetization safety",
+      "passed": true,
+      "detail": "production adapters remain isolated"
+    }
+  ],
+  "passed": 7,
+  "total": 7,
+  "release_blockers": [
+    "Unity Editor build and Android device test are required.",
+    "AAB signing key and Play Console configuration are required.",
+    "Live ad IDs and billing product IDs are not configured.",
+    "Privacy policy placeholders must be replaced with the developer details and a public URL."
+  ]
+}

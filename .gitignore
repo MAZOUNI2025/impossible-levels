@@ -1,0 +1,58 @@
+# Unity generated folders
+[Ll]ibrary/
+[Tt]emp/
+[Ll]ogs/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Uu]ser[Ss]ettings/
+
+# Asset metadata must be committed
+!/[Aa]ssets/**/*.meta
+
+# IDE and user-specific files
+.vs/
+.idea/
+.vscode/
+*.csproj
+*.sln
+*.slnx
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Crash reports and generated logs
+sysinfo.txt
+*.stacktrace
+
+# Build artifacts
+*.apk
+*.aab
+*.unitypackage
+*.app
+*.ipa
+
+# Local archives and exported packages
+*.zip
+*.tar
+*.gz
+
+# Secrets and signing material
+*.keystore
+*.jks
+*.p12
+.env
+.env.*
+
+# Tool caches
+.npm/
+.nuget/

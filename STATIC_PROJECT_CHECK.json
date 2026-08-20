@@ -1,0 +1,82 @@
+{
+  "project": "IMPOSSIBLE LEVELS",
+  "source_static_checks": [
+    {
+      "name": "manifest_json",
+      "ok": true,
+      "detail": "Packages/manifest.json is valid JSON"
+    },
+    {
+      "name": "ProjectSettings/ProjectVersion.txt",
+      "ok": true,
+      "detail": "present"
+    },
+    {
+      "name": "ProjectSettings/EditorBuildSettings.asset",
+      "ok": true,
+      "detail": "present"
+    },
+    {
+      "name": "Assets/Scenes/MainMenu.unity",
+      "ok": true,
+      "detail": "present"
+    },
+    {
+      "name": "Assets/Scenes/Gameplay.unity",
+      "ok": true,
+      "detail": "present"
+    },
+    {
+      "name": "Assets/Scripts/Core/RuntimeSceneBootstrap.cs",
+      "ok": true,
+      "detail": "present"
+    },
+    {
+      "name": "Assets/Scripts/Core/GameBootstrap.cs",
+      "ok": true,
+      "detail": "present"
+    },
+    {
+      "name": "symbol:public void Configure",
+      "ok": true,
+      "detail": "found"
+    },
+    {
+      "name": "symbol:public void SetLevelIndex",
+      "ok": true,
+      "detail": "found"
+    },
+    {
+      "name": "symbol:public void StartFirstLevel",
+      "ok": true,
+      "detail": "found"
+    },
+    {
+      "name": "symbol:public void LoadNextLevel",
+      "ok": true,
+      "detail": "found"
+    },
+    {
+      "name": "level_thumbnails",
+      "ok": true,
+      "detail": "30 found"
+    },
+    {
+      "name": "ui_assets",
+      "ok": true,
+      "detail": "6 found"
+    },
+    {
+      "name": "audio_assets",
+      "ok": true,
+      "detail": "2 music and 8 SFX"
+    }
+  ],
+  "passed": 14,
+  "total": 14,
+  "unity_editor_build_verified": false,
+  "notes": [
+    "Static checks validate files and symbols only.",
+    "Unity compilation and Android APK installation still require Unity Editor and Android SDK."
+  ]
+}
