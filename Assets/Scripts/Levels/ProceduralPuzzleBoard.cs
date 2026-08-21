@@ -175,7 +175,8 @@ namespace ImpossibleLevels.Levels
             var elapsed = Time.unscaledTime - startedAt;
             var stars = runtime != null ? runtime.CalculateStars(elapsed, hintCount) : 3;
             var progression = FindFirstObjectByType<ProgressionService>();
-            if (progression != null) progression.CompleteLevel(levelIndex, stars, 10 + stars * 2);
+            var reward = runtime != null ? runtime.CalculateCoinReward(stars) : 10 + stars * 2;
+            if (progression != null) progression.CompleteLevel(levelIndex, stars, reward);
             if (AudioDirector.Instance != null)
             {
                 AudioDirector.Instance.DoorUnlock();
@@ -287,8 +288,8 @@ namespace ImpossibleLevels.Levels
             public bool draggable;
             public Vector2 startPosition;
             private Vector2 size;
-            private SpriteRenderer renderer;
-            private BoxCollider2D collider;
+            private SpriteRenderer nodeRenderer;
+            private BoxCollider2D nodeCollider;
             private Color originalColor;
 
             public void Configure(NodeKind nodeKind, bool canDrag, Vector2 start, Vector2 nodeSize, SpriteRenderer nodeRenderer, BoxCollider2D nodeCollider)
@@ -297,40 +298,40 @@ namespace ImpossibleLevels.Levels
                 draggable = canDrag;
                 startPosition = start;
                 size = nodeSize;
-                renderer = nodeRenderer;
-                collider = nodeCollider;
-                originalColor = renderer.color;
+                this.nodeRenderer = nodeRenderer;
+                this.nodeCollider = nodeCollider;
+                originalColor = this.nodeRenderer.color;
             }
 
             public bool Contains(Vector2 point)
             {
-                return collider != null && collider.bounds.Contains(point);
+                return nodeCollider != null && nodeCollider.bounds.Contains(point);
             }
 
             public void BeginDrag()
             {
-                renderer.color = Color.Lerp(originalColor, Color.white, 0.25f);
+                nodeRenderer.color = Color.Lerp(originalColor, Color.white, 0.25f);
             }
 
             public void EndDrag()
             {
-                renderer.color = originalColor;
+                nodeRenderer.color = originalColor;
             }
 
             public void ToggleVisual()
             {
-                renderer.color = renderer.color == Color.white ? originalColor : Color.white;
+                nodeRenderer.color = nodeRenderer.color == Color.white ? originalColor : Color.white;
             }
 
             public void PulseInvalid()
             {
-                renderer.color = Color.Lerp(originalColor, Color.red, 0.35f);
+                nodeRenderer.color = Color.Lerp(originalColor, Color.red, 0.35f);
                 Invoke(nameof(ResetColor), 0.16f);
             }
 
             private void ResetColor()
             {
-                if (renderer != null) renderer.color = originalColor;
+                if (nodeRenderer != null) nodeRenderer.color = originalColor;
             }
         }
     }

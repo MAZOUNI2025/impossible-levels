@@ -164,7 +164,7 @@ namespace ImpossibleLevels.Core
             text.fontSize = fontSize;
             text.color = color;
             text.alignment = alignment;
-            text.enableWordWrapping = true;
+            text.textWrappingMode = TextWrappingModes.Normal;
             if (text.font == null) text.font = TMP_Settings.defaultFontAsset;
             return text;
         }

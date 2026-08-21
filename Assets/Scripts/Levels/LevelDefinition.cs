@@ -9,6 +9,7 @@ namespace ImpossibleLevels.Levels
         Physics,
         Observation,
         Timing,
+        Hold,
         Trick,
         Interaction
     }

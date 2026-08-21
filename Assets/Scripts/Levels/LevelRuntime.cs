@@ -24,6 +24,7 @@ namespace ImpossibleLevels.Levels
 
         public LevelState State { get; private set; } = LevelState.Loading;
         public int LevelIndex => levelIndex;
+        public int CoinReward => Mathf.Max(0, coinReward);
 
         public void SetLevelIndex(int index)
         {
@@ -86,6 +87,11 @@ namespace ImpossibleLevels.Levels
                 Time.timeScale = 1f;
                 SetState(LevelState.Playing);
             }
+        }
+
+        public int CalculateCoinReward(int stars)
+        {
+            return CoinReward + Mathf.Max(0, stars) * 2;
         }
 
         public int CalculateStars(float completionTimeSeconds, int hintCount)
