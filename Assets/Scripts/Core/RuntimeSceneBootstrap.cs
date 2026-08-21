@@ -13,6 +13,7 @@ namespace ImpossibleLevels.Core
         private const int TotalLevels = 30;
         private Canvas canvas;
         private Camera gameplayCamera;
+        private static TMP_FontAsset runtimeFontAsset;
 
         private void Awake()
         {
@@ -153,6 +154,7 @@ namespace ImpossibleLevels.Core
         private static TMP_Text AddText(Transform parent, string value, Vector2 anchor, Vector2 size, float fontSize, Color color, TextAlignmentOptions alignment)
         {
             var obj = new GameObject("Text");
+            obj.SetActive(false);
             obj.transform.SetParent(parent, false);
             var rect = obj.AddComponent<RectTransform>();
             rect.anchorMin = anchor;
@@ -160,13 +162,40 @@ namespace ImpossibleLevels.Core
             rect.sizeDelta = new Vector2(size.x * 1080f, size.y * 1920f);
             rect.anchoredPosition = Vector2.zero;
             var text = obj.AddComponent<TextMeshProUGUI>();
+            text.font = ResolveFontAsset();
             text.text = value;
             text.fontSize = fontSize;
             text.color = color;
             text.alignment = alignment;
             text.textWrappingMode = TextWrappingModes.Normal;
-            if (text.font == null) text.font = TMP_Settings.defaultFontAsset;
+            obj.SetActive(true);
             return text;
+        }
+
+        private static TMP_FontAsset ResolveFontAsset()
+        {
+            if (runtimeFontAsset != null) return runtimeFontAsset;
+
+            if (TMP_Settings.instance != null)
+            {
+                runtimeFontAsset = TMP_Settings.defaultFontAsset;
+            }
+
+            if (runtimeFontAsset != null) return runtimeFontAsset;
+
+            var builtInFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            if (builtInFont == null) return null;
+
+            try
+            {
+                runtimeFontAsset = TMP_FontAsset.CreateFontAsset(builtInFont);
+            }
+            catch (System.Exception exception)
+            {
+                Debug.LogWarning("IMPOSSIBLE LEVELS could not create a runtime TMP font: " + exception.Message);
+            }
+
+            return runtimeFontAsset;
         }
 
         private static Button AddButton(Transform parent, string label, Vector2 anchor, Vector2 size, Color color, UnityEngine.Events.UnityAction action)
