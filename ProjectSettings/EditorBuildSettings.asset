@@ -1,12 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!104 &1
-RenderSettings:
-  m_ObjectHideFlags: 0
-  serializedVersion: 9
-  m_Fog: 0
-  m_FogColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
---- !u!168 &2
+--- !u!1045 &1
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
