@@ -276,10 +276,7 @@ namespace ImpossibleLevels.Core
             var obj = new GameObject("Panel");
             obj.transform.SetParent(parent, false);
             var rect = obj.AddComponent<RectTransform>();
-            rect.anchorMin = anchor;
-            rect.anchorMax = anchor;
-            rect.sizeDelta = new Vector2(size.x * 1080f, size.y * 1920f);
-            rect.anchoredPosition = Vector2.zero;
+            SetNormalizedRect(rect, anchor, size);
             var image = obj.AddComponent<Image>();
             image.color = color;
             image.raycastTarget = false;
@@ -291,10 +288,7 @@ namespace ImpossibleLevels.Core
             var obj = new GameObject("ArtImage");
             obj.transform.SetParent(parent, false);
             var rect = obj.AddComponent<RectTransform>();
-            rect.anchorMin = anchor;
-            rect.anchorMax = anchor;
-            rect.sizeDelta = new Vector2(size.x * 1080f, size.y * 1920f);
-            rect.anchoredPosition = Vector2.zero;
+            SetNormalizedRect(rect, anchor, size);
             var image = obj.AddComponent<Image>();
             image.sprite = sprite;
             image.color = color;
@@ -308,10 +302,7 @@ namespace ImpossibleLevels.Core
             var obj = new GameObject("Panel");
             obj.transform.SetParent(parent, false);
             var rect = obj.AddComponent<RectTransform>();
-            rect.anchorMin = anchor;
-            rect.anchorMax = anchor;
-            rect.sizeDelta = new Vector2(size.x * parent.rect.width, size.y * parent.rect.height);
-            rect.anchoredPosition = Vector2.zero;
+            SetNormalizedRect(rect, anchor, size);
             var image = obj.AddComponent<Image>();
             image.color = color;
             image.raycastTarget = false;
@@ -323,10 +314,7 @@ namespace ImpossibleLevels.Core
             var obj = new GameObject("ArtImage");
             obj.transform.SetParent(parent, false);
             var rect = obj.AddComponent<RectTransform>();
-            rect.anchorMin = anchor;
-            rect.anchorMax = anchor;
-            rect.sizeDelta = new Vector2(size.x * parent.rect.width, size.y * parent.rect.height);
-            rect.anchoredPosition = Vector2.zero;
+            SetNormalizedRect(rect, anchor, size);
             var image = obj.AddComponent<Image>();
             image.sprite = sprite;
             image.color = color;
@@ -341,17 +329,11 @@ namespace ImpossibleLevels.Core
             obj.SetActive(false);
             obj.transform.SetParent(parent, false);
             var rect = obj.AddComponent<RectTransform>();
-            rect.anchorMin = anchor;
-            rect.anchorMax = anchor;
-            rect.sizeDelta = new Vector2(size.x * 1080f, size.y * 1920f);
-            rect.anchoredPosition = Vector2.zero;
+            SetNormalizedRect(rect, anchor, size);
             var text = obj.AddComponent<TextMeshProUGUI>();
             text.font = ResolveFontAsset();
             text.text = value;
-            text.fontSize = fontSize;
-            text.color = color;
-            text.alignment = alignment;
-            text.textWrappingMode = TextWrappingModes.Normal;
+            ConfigureText(text, fontSize, color, alignment);
             obj.SetActive(true);
             return text;
         }
@@ -362,17 +344,11 @@ namespace ImpossibleLevels.Core
             obj.SetActive(false);
             obj.transform.SetParent(parent, false);
             var rect = obj.AddComponent<RectTransform>();
-            rect.anchorMin = anchor;
-            rect.anchorMax = anchor;
-            rect.sizeDelta = new Vector2(size.x * parent.rect.width, size.y * parent.rect.height);
-            rect.anchoredPosition = Vector2.zero;
+            SetNormalizedRect(rect, anchor, size);
             var text = obj.AddComponent<TextMeshProUGUI>();
             text.font = ResolveFontAsset();
             text.text = value;
-            text.fontSize = fontSize;
-            text.color = color;
-            text.alignment = alignment;
-            text.textWrappingMode = TextWrappingModes.Normal;
+            ConfigureText(text, fontSize, color, alignment);
             obj.SetActive(true);
             return text;
         }
@@ -401,14 +377,12 @@ namespace ImpossibleLevels.Core
             var obj = new GameObject("Button_" + label.Replace(" ", "_"));
             obj.transform.SetParent(parent, false);
             var rect = obj.AddComponent<RectTransform>();
-            rect.anchorMin = anchor;
-            rect.anchorMax = anchor;
-            rect.sizeDelta = new Vector2(size.x * 1080f, size.y * 1920f);
-            rect.anchoredPosition = Vector2.zero;
+            SetNormalizedRect(rect, anchor, size);
             var image = obj.AddComponent<Image>();
             image.color = color;
             var button = obj.AddComponent<Button>();
             button.targetGraphic = image;
+            ConfigureButton(button, color);
             if (action != null) button.onClick.AddListener(action);
             var motion = obj.AddComponent<MotionFeedback>();
             button.onClick.AddListener(motion.Press);
@@ -421,14 +395,12 @@ namespace ImpossibleLevels.Core
             var obj = new GameObject("Button_" + label.Replace(" ", "_"));
             obj.transform.SetParent(parent, false);
             var rect = obj.AddComponent<RectTransform>();
-            rect.anchorMin = anchor;
-            rect.anchorMax = anchor;
-            rect.sizeDelta = new Vector2(size.x * parent.rect.width, size.y * parent.rect.height);
-            rect.anchoredPosition = Vector2.zero;
+            SetNormalizedRect(rect, anchor, size);
             var image = obj.AddComponent<Image>();
             image.color = color;
             var button = obj.AddComponent<Button>();
             button.targetGraphic = image;
+            ConfigureButton(button, color);
             if (action != null) button.onClick.AddListener(action);
             var motion = obj.AddComponent<MotionFeedback>();
             button.onClick.AddListener(motion.Press);
@@ -478,10 +450,7 @@ namespace ImpossibleLevels.Core
             var scrollObject = new GameObject("LevelMapScroll");
             scrollObject.transform.SetParent(parent, false);
             var scrollRectTransform = scrollObject.AddComponent<RectTransform>();
-            scrollRectTransform.anchorMin = anchor;
-            scrollRectTransform.anchorMax = anchor;
-            scrollRectTransform.sizeDelta = new Vector2(size.x * 1080f, size.y * 1920f);
-            scrollRectTransform.anchoredPosition = Vector2.zero;
+            SetNormalizedRect(scrollRectTransform, anchor, size);
 
             var scroll = scrollObject.AddComponent<ScrollRect>();
             scroll.horizontal = false;
@@ -551,6 +520,7 @@ namespace ImpossibleLevels.Core
 
             var button = cardObject.AddComponent<Button>();
             button.targetGraphic = cardImage;
+            ConfigureButton(button, cardImage.color);
             button.interactable = unlocked;
             if (unlocked) button.onClick.AddListener(action);
             var motion = cardObject.AddComponent<MotionFeedback>();
@@ -589,6 +559,48 @@ namespace ImpossibleLevels.Core
                     new Vector2(0.62f + i * 0.075f, 0.92f), new Vector2(0.060f, 0.115f), true);
                 star.raycastTarget = false;
             }
+        }
+
+        private static void SetNormalizedRect(RectTransform rect, Vector2 center, Vector2 size)
+        {
+            if (center == Vector2.zero && size == Vector2.one)
+            {
+                rect.anchorMin = Vector2.zero;
+                rect.anchorMax = Vector2.one;
+            }
+            else
+            {
+                var half = size * 0.5f;
+                rect.anchorMin = new Vector2(Mathf.Clamp01(center.x - half.x), Mathf.Clamp01(center.y - half.y));
+                rect.anchorMax = new Vector2(Mathf.Clamp01(center.x + half.x), Mathf.Clamp01(center.y + half.y));
+            }
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+        }
+
+        private static void ConfigureText(TMP_Text text, float fontSize, Color color, TextAlignmentOptions alignment)
+        {
+            text.fontSize = fontSize;
+            text.fontSizeMin = Mathf.Max(12f, fontSize * 0.62f);
+            text.fontSizeMax = fontSize;
+            text.enableAutoSizing = true;
+            text.color = color;
+            text.alignment = alignment;
+            text.textWrappingMode = TextWrappingModes.Normal;
+            text.overflowMode = TextOverflowModes.Ellipsis;
+        }
+
+        private static void ConfigureButton(Button button, Color color)
+        {
+            var colors = button.colors;
+            colors.normalColor = color;
+            colors.highlightedColor = Color.Lerp(color, Color.white, 0.12f);
+            colors.pressedColor = Color.Lerp(color, Color.black, 0.16f);
+            colors.selectedColor = colors.highlightedColor;
+            colors.disabledColor = Color.Lerp(color, new Color(0.035f, 0.055f, 0.14f, 1f), 0.42f);
+            colors.colorMultiplier = 1f;
+            colors.fadeDuration = 0.06f;
+            button.colors = colors;
         }
 
         private static string StarString(int stars)
