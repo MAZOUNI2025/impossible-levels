@@ -95,6 +95,7 @@ namespace ImpossibleLevels.Levels
             CreateBlock("Background", new Vector2(0f, 0f), new Vector2(boardWidth, boardHeight), Navy, -10);
             CreateBlock("Floor", new Vector2(0f, -5.35f), new Vector2(7.4f, 0.45f), Slate, -1);
             CreateBlock("TopRail", new Vector2(0f, 5.35f), new Vector2(7.4f, 0.25f), Slate, -1);
+            CreatePlayerVisual(new Vector2(-2.65f, -3.85f), new Vector2(0.95f, 1.15f));
 
             var variation = (index - 1) % 6;
             var keyPosition = new Vector2(-2.25f + (variation % 3) * 0.45f, 1.0f - (variation / 3) * 1.2f);
@@ -203,8 +204,9 @@ namespace ImpossibleLevels.Levels
             obj.transform.position = position;
             obj.transform.localScale = new Vector3(size.x, size.y, 1f);
             var renderer = obj.AddComponent<SpriteRenderer>();
-            renderer.sprite = ArtAssetLibrary.GetGameplaySprite(kind.ToString()) ?? squareSprite;
-            renderer.color = color;
+            var gameplaySprite = ArtAssetLibrary.GetGameplaySprite(kind.ToString());
+            renderer.sprite = gameplaySprite ?? squareSprite;
+            renderer.color = gameplaySprite != null ? Color.white : color;
             renderer.sortingOrder = 2;
             var collider = obj.AddComponent<BoxCollider2D>();
             collider.size = Vector2.one;
@@ -221,9 +223,24 @@ namespace ImpossibleLevels.Levels
             obj.transform.position = position;
             obj.transform.localScale = new Vector3(size.x, size.y, 1f);
             var renderer = obj.AddComponent<SpriteRenderer>();
-            renderer.sprite = ArtAssetLibrary.GetGameplaySprite(name) ?? squareSprite;
-            renderer.color = color;
+            var gameplaySprite = ArtAssetLibrary.GetGameplaySprite(name);
+            renderer.sprite = gameplaySprite ?? squareSprite;
+            renderer.color = gameplaySprite != null ? Color.white : color;
             renderer.sortingOrder = sortingOrder;
+        }
+
+        private void CreatePlayerVisual(Vector2 position, Vector2 size)
+        {
+            var obj = new GameObject("PlayerVisual");
+            obj.transform.SetParent(levelRoot != null ? levelRoot : transform, false);
+            obj.transform.position = position;
+            obj.transform.localScale = new Vector3(size.x, size.y, 1f);
+
+            var renderer = obj.AddComponent<SpriteRenderer>();
+            var gameplaySprite = ArtAssetLibrary.GetGameplaySprite("Player");
+            renderer.sprite = gameplaySprite ?? squareSprite;
+            renderer.color = gameplaySprite != null ? Color.white : new Color(0.12f, 0.82f, 0.95f, 1f);
+            renderer.sortingOrder = 3;
         }
 
         private void ClearBoard()
