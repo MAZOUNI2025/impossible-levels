@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using ImpossibleLevels.Audio;
 using ImpossibleLevels.Core;
+using ImpossibleLevels.UI;
 
 namespace ImpossibleLevels.Levels
 {
@@ -202,7 +203,7 @@ namespace ImpossibleLevels.Levels
             obj.transform.position = position;
             obj.transform.localScale = new Vector3(size.x, size.y, 1f);
             var renderer = obj.AddComponent<SpriteRenderer>();
-            renderer.sprite = squareSprite;
+            renderer.sprite = ArtAssetLibrary.GetGameplaySprite(kind.ToString()) ?? squareSprite;
             renderer.color = color;
             renderer.sortingOrder = 2;
             var collider = obj.AddComponent<BoxCollider2D>();
@@ -220,7 +221,7 @@ namespace ImpossibleLevels.Levels
             obj.transform.position = position;
             obj.transform.localScale = new Vector3(size.x, size.y, 1f);
             var renderer = obj.AddComponent<SpriteRenderer>();
-            renderer.sprite = squareSprite;
+            renderer.sprite = ArtAssetLibrary.GetGameplaySprite(name) ?? squareSprite;
             renderer.color = color;
             renderer.sortingOrder = sortingOrder;
         }
