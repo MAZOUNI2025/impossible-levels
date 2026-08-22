@@ -40,13 +40,40 @@ namespace ImpossibleLevels.Levels
 
             PlayerPrefs.SetInt("il.selected_level", levelRuntime.LevelIndex + 1);
             PlayerPrefs.Save();
+            Time.timeScale = 1f;
             SceneManager.LoadScene(gameplaySceneName);
+        }
+
+        public void ReplayLevel()
+        {
+            if (levelRuntime == null) return;
+            routed = false;
+            Time.timeScale = 1f;
+            SceneManager.LoadScene(gameplaySceneName);
+        }
+
+        public void ReturnToLevelMap()
+        {
+            LoadMainMenu("map");
+        }
+
+        public void OpenSettings()
+        {
+            LoadMainMenu("settings");
         }
 
         public void ReturnToMenu()
         {
+            LoadMainMenu(string.Empty);
+        }
+
+        private void LoadMainMenu(string initialScreen)
+        {
             routed = false;
             Time.timeScale = 1f;
+            if (string.IsNullOrEmpty(initialScreen)) PlayerPrefs.DeleteKey("il.main_menu_screen");
+            else PlayerPrefs.SetString("il.main_menu_screen", initialScreen);
+            PlayerPrefs.Save();
             SceneManager.LoadScene(mainMenuSceneName);
         }
 
