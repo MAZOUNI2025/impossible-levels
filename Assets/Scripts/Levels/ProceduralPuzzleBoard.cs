@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using ImpossibleLevels.Audio;
@@ -80,14 +81,17 @@ namespace ImpossibleLevels.Levels
             }
         }
 
-        public void UseHint()
-        {
-            if (solved) return;
-            hintCount++;
-            if (AudioDirector.Instance != null) AudioDirector.Instance.Hint();
-            var progression = FindFirstObjectByType<ProgressionService>();
-            if (progression != null && progression.Coins >= 5) progression.SpendCoins(5);
-        }
+    public void UseHint()
+    {
+        if (solved) return;
+        hintCount++;
+        if (AudioDirector.Instance != null) AudioDirector.Instance.Hint();
+        HapticsFeedback.TryPulse();
+        var hintedNode = FindHintTarget();
+        if (hintedNode != null) hintedNode.PulseHint();
+        var progression = FindFirstObjectByType<ProgressionService>();
+        if (progression != null && progression.Coins >= 5) progression.SpendCoins(5);
+    }
 
         private void BuildLevel(int index)
         {
@@ -131,22 +135,26 @@ namespace ImpossibleLevels.Levels
             {
                 case NodeKind.Key:
                     hasKey = true;
-                    node.gameObject.SetActive(false);
+                    node.CollectFeedbackAndHide();
                     if (AudioDirector.Instance != null) AudioDirector.Instance.KeyPickup();
+                    HapticsFeedback.TryPulse();
                     break;
                 case NodeKind.Door:
                     if (hasKey)
                     {
+                        node.PulseSuccess();
                         Complete();
                     }
                     else
                     {
                         node.PulseInvalid();
                         if (AudioDirector.Instance != null) AudioDirector.Instance.Invalid();
+                        HapticsFeedback.TryPulse();
                     }
                     break;
                 case NodeKind.Switch:
                     node.ToggleVisual();
+                    node.PulseSuccess();
                     break;
                 case NodeKind.Decoy:
                     node.PulseInvalid();
@@ -162,6 +170,7 @@ namespace ImpossibleLevels.Levels
             {
                 node.transform.position = new Vector2(0f, -1f);
                 if (AudioDirector.Instance != null) AudioDirector.Instance.Tap();
+                node.PulseSuccess();
             }
             else if (node.kind == NodeKind.Block)
             {
@@ -184,6 +193,7 @@ namespace ImpossibleLevels.Levels
                 AudioDirector.Instance.DoorUnlock();
                 AudioDirector.Instance.Success();
             }
+            HapticsFeedback.TryPulse();
             runtime.CompleteLevel();
         }
 
@@ -193,6 +203,16 @@ namespace ImpossibleLevels.Levels
             {
                 var node = nodes[i];
                 if (node != null && node.gameObject.activeInHierarchy && node.Contains(worldPoint)) return node;
+            }
+            return null;
+        }
+
+        private PuzzleNode FindHintTarget()
+        {
+            for (var i = nodes.Count - 1; i >= 0; i--)
+            {
+                var node = nodes[i];
+                if (node != null && node.gameObject.activeInHierarchy && node.kind == NodeKind.Key) return node;
             }
             return null;
         }
@@ -309,6 +329,7 @@ namespace ImpossibleLevels.Levels
             private SpriteRenderer nodeRenderer;
             private BoxCollider2D nodeCollider;
             private Color originalColor;
+            private bool toggledVisual;
 
             public void Configure(NodeKind nodeKind, bool canDrag, Vector2 start, Vector2 nodeSize, SpriteRenderer nodeRenderer, BoxCollider2D nodeCollider)
             {
@@ -319,6 +340,7 @@ namespace ImpossibleLevels.Levels
                 this.nodeRenderer = nodeRenderer;
                 this.nodeCollider = nodeCollider;
                 originalColor = this.nodeRenderer.color;
+                toggledVisual = false;
             }
 
             public bool Contains(Vector2 point)
@@ -329,27 +351,91 @@ namespace ImpossibleLevels.Levels
             public void BeginDrag()
             {
                 nodeRenderer.color = Color.Lerp(originalColor, Color.white, 0.25f);
+                transform.localScale = transform.localScale * 1.04f;
             }
 
             public void EndDrag()
             {
                 nodeRenderer.color = originalColor;
+                transform.localScale = new Vector3(size.x, size.y, 1f);
             }
 
             public void ToggleVisual()
             {
-                nodeRenderer.color = nodeRenderer.color == Color.white ? originalColor : Color.white;
+                toggledVisual = !toggledVisual;
+                nodeRenderer.color = CurrentVisualColor();
             }
 
             public void PulseInvalid()
             {
-                nodeRenderer.color = Color.Lerp(originalColor, Color.red, 0.35f);
+                StopAllCoroutines();
+                CancelInvoke(nameof(ResetColor));
+                nodeRenderer.color = Color.Lerp(CurrentVisualColor(), Color.red, 0.35f);
                 Invoke(nameof(ResetColor), 0.16f);
+            }
+
+            public void PulseSuccess()
+            {
+                StopAllCoroutines();
+                CancelInvoke(nameof(ResetColor));
+                StartCoroutine(SuccessRoutine());
+            }
+
+            public void PulseHint()
+            {
+                StopAllCoroutines();
+                CancelInvoke(nameof(ResetColor));
+                StartCoroutine(HintRoutine());
+            }
+
+            public void CollectFeedbackAndHide()
+            {
+                if (!gameObject.activeInHierarchy) return;
+                if (nodeCollider != null) nodeCollider.enabled = false;
+                StopAllCoroutines();
+                CancelInvoke(nameof(ResetColor));
+                StartCoroutine(CollectRoutine());
+            }
+
+            private IEnumerator SuccessRoutine()
+            {
+                var startScale = transform.localScale;
+                nodeRenderer.color = Color.Lerp(originalColor, Color.white, 0.32f);
+                transform.localScale = startScale * 1.10f;
+                yield return new WaitForSecondsRealtime(0.12f);
+                if (nodeRenderer != null) nodeRenderer.color = originalColor;
+                transform.localScale = startScale;
+            }
+
+            private IEnumerator HintRoutine()
+            {
+                var startScale = transform.localScale;
+                nodeRenderer.color = Color.Lerp(originalColor, Color.white, 0.45f);
+                transform.localScale = startScale * 1.08f;
+                yield return new WaitForSecondsRealtime(0.18f);
+                if (nodeRenderer != null) nodeRenderer.color = originalColor;
+                transform.localScale = startScale;
+            }
+
+            private IEnumerator CollectRoutine()
+            {
+                var startScale = transform.localScale;
+                nodeRenderer.color = Color.Lerp(originalColor, Color.white, 0.45f);
+                transform.localScale = startScale * 1.14f;
+                yield return new WaitForSecondsRealtime(0.12f);
+                gameObject.SetActive(false);
+            }
+
+            private Color CurrentVisualColor()
+            {
+                return toggledVisual
+                    ? Color.Lerp(originalColor, new Color(0.10f, 0.95f, 0.82f), 0.35f)
+                    : originalColor;
             }
 
             private void ResetColor()
             {
-                if (nodeRenderer != null) nodeRenderer.color = originalColor;
+                if (nodeRenderer != null) nodeRenderer.color = CurrentVisualColor();
             }
         }
     }

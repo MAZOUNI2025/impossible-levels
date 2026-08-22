@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using ImpossibleLevels.Audio;
 
@@ -55,7 +56,7 @@ namespace ImpossibleLevels.UI
         }
     }
 
-    public sealed class MotionFeedback : MonoBehaviour
+    public sealed class MotionFeedback : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, ICancelHandler
     {
         [SerializeField] private RectTransform target;
         [SerializeField] private float pressScale = 0.94f;
@@ -69,19 +70,61 @@ namespace ImpossibleLevels.UI
             if (target != null) baseScale = target.localScale;
         }
 
+        public void OnPointerDown(PointerEventData eventData)
+        {
+            SetPressed();
+        }
+
+        public void OnPointerUp(PointerEventData eventData)
+        {
+            Release();
+        }
+
+        public void OnCancel(BaseEventData eventData)
+        {
+            Release();
+        }
+
         public void Press()
         {
             if (target == null) return;
             StopAllCoroutines();
             StartCoroutine(PressRoutine());
             if (AudioDirector.Instance != null) AudioDirector.Instance.Tap();
+            HapticsFeedback.TryPulse();
+        }
+
+        private void SetPressed()
+        {
+            if (target == null) return;
+            StopAllCoroutines();
+            target.localScale = baseScale * pressScale;
+        }
+
+        private void Release()
+        {
+            if (target == null) return;
+            StopAllCoroutines();
+            StartCoroutine(ReleaseRoutine());
         }
 
         private IEnumerator PressRoutine()
         {
-            target.localScale = baseScale * pressScale;
+            SetPressed();
             yield return new WaitForSecondsRealtime(duration);
             target.localScale = baseScale;
+        }
+
+        private IEnumerator ReleaseRoutine()
+        {
+            yield return new WaitForSecondsRealtime(duration);
+            if (target != null) target.localScale = baseScale;
+        }
+
+        private void OnDisable()
+        {
+            StopAllCoroutines();
+            if (target != null) target.localScale = baseScale;
         }
     }
 }

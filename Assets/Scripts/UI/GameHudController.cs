@@ -1,8 +1,10 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using ImpossibleLevels.Core;
 using ImpossibleLevels.Levels;
+using ImpossibleLevels.Audio;
 
 namespace ImpossibleLevels.UI
 {
@@ -33,6 +35,17 @@ namespace ImpossibleLevels.UI
 
         [Header("Runtime")]
         [SerializeField] private LevelRuntime levelRuntime;
+
+        private CanvasGroup pauseCanvasGroup;
+        private CanvasGroup successCanvasGroup;
+        private CanvasGroup failCanvasGroup;
+        private Coroutine pauseTransition;
+        private Coroutine successTransition;
+        private Coroutine failTransition;
+        private Coroutine starsReveal;
+        private Coroutine coinPulse;
+        private Coroutine hintPulse;
+        private int lastDisplayedCoins = -1;
 
         public void Configure(LevelRuntime runtime, GameObject pause, GameObject success, GameObject fail,
             TMP_Text objective, TMP_Text level, TMP_Text hint, TMP_Text coins,
@@ -68,9 +81,9 @@ namespace ImpossibleLevels.UI
         {
             if (levelRuntime == null) levelRuntime = FindFirstObjectByType<LevelRuntime>();
             BindRuntimeEvents();
-            SetPanel(pausePanel, false);
-            SetPanel(successPanel, false);
-            SetPanel(failPanel, false);
+            SetPanelImmediate(pausePanel, ref pauseCanvasGroup, false);
+            SetPanelImmediate(successPanel, ref successCanvasGroup, false);
+            SetPanelImmediate(failPanel, ref failCanvasGroup, false);
             SetPanel(hintLabel != null ? hintLabel.gameObject : null, false);
             RefreshStars();
         }
@@ -78,6 +91,7 @@ namespace ImpossibleLevels.UI
         private void OnDisable()
         {
             if (levelRuntime != null) levelRuntime.StateChanged -= OnStateChanged;
+            StopFeedbackCoroutines();
         }
 
         public void SetObjective(string objective, int levelIndex)
@@ -89,22 +103,42 @@ namespace ImpossibleLevels.UI
 
         public void SetCoins(int coins)
         {
-            if (coinLabel != null) coinLabel.text = Mathf.Max(0, coins).ToString();
+            var safeCoins = Mathf.Max(0, coins);
+            if (coinLabel != null) coinLabel.text = safeCoins.ToString();
+            if (lastDisplayedCoins >= 0 && lastDisplayedCoins != safeCoins && coinLabel != null)
+            {
+                PulseTransform(coinLabel.rectTransform, ref coinPulse, 1.08f, 0.12f);
+            }
+            lastDisplayedCoins = safeCoins;
         }
 
         public void SetHint(string hint)
         {
-            if (hintLabel != null) hintLabel.text = hint;
+            if (hintLabel != null)
+            {
+                hintLabel.text = hint;
+                hintLabel.color = new Color(0.10f, 0.95f, 0.82f);
+                PulseTransform(hintLabel.rectTransform, ref hintPulse, 1.03f, 0.10f);
+            }
             SetPanel(hintLabel != null ? hintLabel.gameObject : null, true);
             RefreshCoinsFromProgression();
         }
 
         private void OnStateChanged(LevelState state)
         {
-            SetPanel(pausePanel, state == LevelState.Paused);
-            SetPanel(successPanel, state == LevelState.Completed);
-            SetPanel(failPanel, state == LevelState.Failed);
-            if (state == LevelState.Completed) UpdateCompletionSummary();
+            if (state == LevelState.Paused) ShowPanel(pausePanel, ref pauseCanvasGroup, ref pauseTransition);
+            else HidePanel(pausePanel, ref pauseCanvasGroup, ref pauseTransition);
+
+            if (state == LevelState.Completed)
+            {
+                UpdateCompletionSummary();
+                ShowPanel(successPanel, ref successCanvasGroup, ref successTransition);
+                RevealStars();
+            }
+            else HidePanel(successPanel, ref successCanvasGroup, ref successTransition);
+
+            if (state == LevelState.Failed) ShowPanel(failPanel, ref failCanvasGroup, ref failTransition);
+            else HidePanel(failPanel, ref failCanvasGroup, ref failTransition);
         }
 
         private void OnPausePressed()
@@ -212,6 +246,104 @@ namespace ImpossibleLevels.UI
             if (completionCoinsLabel != null) completionCoinsLabel.text = $"COINS EARNED  +{reward}";
             RefreshStars();
             RefreshCoinsFromProgression();
+        }
+
+        private void RevealStars()
+        {
+            if (starVisuals == null || starVisuals.Length < 3) return;
+            if (starsReveal != null) StopCoroutine(starsReveal);
+            starsReveal = StartCoroutine(RevealStarsRoutine());
+        }
+
+        private IEnumerator RevealStarsRoutine()
+        {
+            for (var i = 0; i < 3; i++)
+            {
+                if (starVisuals[i] == null) continue;
+                var original = starVisuals[i].color;
+                starVisuals[i].color = new Color(original.r, original.g, original.b, 0f);
+                yield return new WaitForSecondsRealtime(0.07f);
+                starVisuals[i].color = original;
+                yield return new WaitForSecondsRealtime(0.05f);
+            }
+            starsReveal = null;
+        }
+
+        private void ShowPanel(GameObject panel, ref CanvasGroup group, ref Coroutine routine)
+        {
+            if (panel == null) return;
+            EnsureCanvasGroup(panel, ref group);
+            if (routine != null) StopCoroutine(routine);
+            panel.SetActive(true);
+            routine = StartCoroutine(PanelInRoutine(panel.transform as RectTransform, group));
+        }
+
+        private void HidePanel(GameObject panel, ref CanvasGroup group, ref Coroutine routine)
+        {
+            if (panel == null) return;
+            if (routine != null) StopCoroutine(routine);
+            routine = null;
+            if (group == null) EnsureCanvasGroup(panel, ref group);
+            group.alpha = 1f;
+            var rect = panel.transform as RectTransform;
+            if (rect != null) rect.localScale = Vector3.one;
+            panel.SetActive(false);
+        }
+
+        private IEnumerator PanelInRoutine(RectTransform rect, CanvasGroup group)
+        {
+            if (rect == null || group == null) yield break;
+            rect.localScale = Vector3.one * 0.95f;
+            group.alpha = 0f;
+            var elapsed = 0f;
+            while (elapsed < 0.16f)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                var t = Mathf.Clamp01(elapsed / 0.16f);
+                group.alpha = t;
+                rect.localScale = Vector3.LerpUnclamped(Vector3.one * 0.95f, Vector3.one, t);
+                yield return null;
+            }
+            group.alpha = 1f;
+            rect.localScale = Vector3.one;
+        }
+
+        private static void SetPanelImmediate(GameObject panel, ref CanvasGroup group, bool visible)
+        {
+            if (panel == null) return;
+            if (group == null) group = panel.GetComponent<CanvasGroup>() ?? panel.AddComponent<CanvasGroup>();
+            group.alpha = visible ? 1f : 0f;
+            panel.SetActive(visible);
+        }
+
+        private static void EnsureCanvasGroup(GameObject panel, ref CanvasGroup group)
+        {
+            if (group == null) group = panel.GetComponent<CanvasGroup>() ?? panel.AddComponent<CanvasGroup>();
+        }
+
+        private void PulseTransform(RectTransform target, ref Coroutine routine, float peakScale, float duration)
+        {
+            if (target == null) return;
+            if (routine != null) StopCoroutine(routine);
+            routine = StartCoroutine(PulseRoutine(target, peakScale, duration));
+        }
+
+        private IEnumerator PulseRoutine(RectTransform target, float peakScale, float duration)
+        {
+            var baseScale = target.localScale;
+            target.localScale = baseScale * peakScale;
+            yield return new WaitForSecondsRealtime(duration);
+            if (target != null) target.localScale = baseScale;
+        }
+
+        private void StopFeedbackCoroutines()
+        {
+            if (pauseTransition != null) StopCoroutine(pauseTransition);
+            if (successTransition != null) StopCoroutine(successTransition);
+            if (failTransition != null) StopCoroutine(failTransition);
+            if (starsReveal != null) StopCoroutine(starsReveal);
+            if (coinPulse != null) StopCoroutine(coinPulse);
+            if (hintPulse != null) StopCoroutine(hintPulse);
         }
 
         private static string StarString(int stars)
