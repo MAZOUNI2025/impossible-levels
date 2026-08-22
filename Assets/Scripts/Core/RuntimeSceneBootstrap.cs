@@ -152,37 +152,51 @@ namespace ImpossibleLevels.Core
             var board = gameObject.AddComponent<ProceduralPuzzleBoard>();
             board.Configure(runtime, levelRootObject.transform, gameplayCamera);
 
-            canvas = CreateCanvas("GameplayCanvas");
+            canvas = CreateCanvas("GameplayCanvas", true);
             var root = canvas.transform as RectTransform;
             var selectedLevel = Mathf.Clamp(PlayerPrefs.GetInt("il.selected_level", 1), 1, TotalLevels);
-            AddImagePanel(root, ArtAssetLibrary.GetLevelThumbnail(selectedLevel), new Color(1f, 1f, 1f, 0.10f), new Vector2(0.5f, 0.79f), new Vector2(0.68f, 0.24f), true);
-            AddPanel(root, new Color(0.035f, 0.055f, 0.14f, 0.93f), new Vector2(0.5f, 0.5f), new Vector2(1f, 0.17f));
 
-            var pausePanel = AddPanel(root, new Color(0.035f, 0.055f, 0.14f, 0.97f), new Vector2(0.5f, 0.5f), new Vector2(0.72f, 0.42f));
-            AddText(pausePanel, "PAUSED", new Vector2(0.5f, 0.68f), new Vector2(0.9f, 0.18f), 42, Color.white, TextAlignmentOptions.Center);
-            var successPanel = AddPanel(root, new Color(0.035f, 0.055f, 0.14f, 0.97f), new Vector2(0.5f, 0.5f), new Vector2(0.78f, 0.48f));
-            AddText(successPanel, "LEVEL COMPLETE", new Vector2(0.5f, 0.72f), new Vector2(0.9f, 0.16f), 34, new Color(0.10f, 0.82f, 0.78f), TextAlignmentOptions.Center);
-            var failPanel = AddPanel(root, new Color(0.035f, 0.055f, 0.14f, 0.97f), new Vector2(0.5f, 0.5f), new Vector2(0.78f, 0.42f));
-            AddText(failPanel, "TRY AGAIN", new Vector2(0.5f, 0.72f), new Vector2(0.9f, 0.16f), 34, new Color(1f, 0.63f, 0.08f), TextAlignmentOptions.Center);
+            var hudBar = AddPanel(root, new Color(0.035f, 0.055f, 0.14f, 0.96f), new Vector2(0.5f, 0.925f), new Vector2(1f, 0.15f));
+            var levelLabel = AddTextRelative(hudBar, "LEVEL", new Vector2(0.13f, 0.50f), new Vector2(0.22f, 0.62f), 26, Color.white, TextAlignmentOptions.Left);
+            var starVisuals = new Image[3];
+            for (var i = 0; i < starVisuals.Length; i++)
+            {
+                starVisuals[i] = AddImagePanelRelative(hudBar, ArtAssetLibrary.GetGameplaySprite("star_empty"), Color.white,
+                    new Vector2(0.40f + i * 0.055f, 0.50f), new Vector2(0.045f, 0.54f), true);
+            }
+            var starsFallback = AddTextRelative(hudBar, "☆☆☆", new Vector2(0.49f, 0.50f), new Vector2(0.18f, 0.55f), 24, new Color(1f, 0.78f, 0.24f), TextAlignmentOptions.Center);
+            AddImagePanelRelative(hudBar, ArtAssetLibrary.GetGameplaySprite("coin"), Color.white,
+                new Vector2(0.68f, 0.50f), new Vector2(0.055f, 0.60f), true);
+            var coinLabel = AddTextRelative(hudBar, "0", new Vector2(0.77f, 0.50f), new Vector2(0.15f, 0.58f), 25, new Color(1f, 0.78f, 0.24f), TextAlignmentOptions.Left);
+            var pauseButton = AddGameplayIconButton(hudBar, "PAUSE", ArtAssetLibrary.GetGameplaySprite("pause"),
+                new Vector2(0.92f, 0.50f), new Vector2(0.12f, 0.82f), new Color(0.13f, 0.18f, 0.34f), null);
 
-            var levelLabel = AddText(root, "LEVEL", new Vector2(0.18f, 0.94f), new Vector2(0.32f, 0.05f), 26, Color.white, TextAlignmentOptions.Left);
-            var objectiveLabel = AddText(root, "Find the key and open the door.", new Vector2(0.5f, 0.875f), new Vector2(0.86f, 0.07f), 22, Color.white, TextAlignmentOptions.Center);
-            var hintLabel = AddText(root, "", new Vector2(0.5f, 0.16f), new Vector2(0.86f, 0.06f), 20, new Color(0.10f, 0.82f, 0.78f), TextAlignmentOptions.Center);
-            var coinLabel = AddText(root, "0", new Vector2(0.82f, 0.94f), new Vector2(0.25f, 0.05f), 26, new Color(1f, 0.63f, 0.08f), TextAlignmentOptions.Right);
+            var objectivePanel = AddPanel(root, new Color(0.035f, 0.055f, 0.14f, 0.78f), new Vector2(0.5f, 0.795f), new Vector2(0.90f, 0.075f));
+            var objectiveLabel = AddTextRelative(objectivePanel, "Find the key and open the door.", new Vector2(0.5f, 0.50f), new Vector2(0.94f, 0.70f), 20, Color.white, TextAlignmentOptions.Center);
+            var hintLabel = AddText(root, "", new Vector2(0.5f, 0.18f), new Vector2(0.88f, 0.055f), 19, new Color(0.10f, 0.82f, 0.78f), TextAlignmentOptions.Center);
 
-            var pauseButton = AddButton(root, "II", new Vector2(0.90f, 0.875f), new Vector2(0.12f, 0.07f), new Color(0.13f, 0.18f, 0.34f), null);
-            var retryButton = AddButton(failPanel, "RETRY", new Vector2(0.5f, 0.27f), new Vector2(0.58f, 0.18f), new Color(1f, 0.63f, 0.08f), null);
-            var continueButton = AddButton(failPanel, "CONTINUE", new Vector2(0.5f, 0.06f), new Vector2(0.58f, 0.12f), new Color(0.10f, 0.82f, 0.78f), null);
-            var hintButton = AddIconButton(root, "HINT  -5", "hint", new Vector2(0.5f, 0.08f), new Vector2(0.30f, 0.09f), new Color(0.55f, 0.22f, 1f), board.UseHint);
+            var pausePanel = AddPanel(root, new Color(0.035f, 0.055f, 0.14f, 0.98f), new Vector2(0.5f, 0.50f), new Vector2(0.72f, 0.42f));
+            AddTextRelative(pausePanel, "PAUSED", new Vector2(0.5f, 0.68f), new Vector2(0.90f, 0.18f), 42, Color.white, TextAlignmentOptions.Center);
+            var successPanel = AddPanel(root, new Color(0.035f, 0.055f, 0.14f, 0.98f), new Vector2(0.5f, 0.50f), new Vector2(0.82f, 0.52f));
+            AddTextRelative(successPanel, "LEVEL COMPLETE", new Vector2(0.5f, 0.78f), new Vector2(0.90f, 0.14f), 34, new Color(0.10f, 0.82f, 0.78f), TextAlignmentOptions.Center);
+            var completionStatsLabel = AddTextRelative(successPanel, "STARS 0 / 3", new Vector2(0.5f, 0.60f), new Vector2(0.82f, 0.08f), 23, new Color(1f, 0.78f, 0.24f), TextAlignmentOptions.Center);
+            var completionCoinsLabel = AddTextRelative(successPanel, "COINS +0", new Vector2(0.5f, 0.50f), new Vector2(0.82f, 0.08f), 22, new Color(1f, 0.63f, 0.08f), TextAlignmentOptions.Center);
+            var failPanel = AddPanel(root, new Color(0.035f, 0.055f, 0.14f, 0.98f), new Vector2(0.5f, 0.50f), new Vector2(0.78f, 0.42f));
+            AddTextRelative(failPanel, "TRY AGAIN", new Vector2(0.5f, 0.72f), new Vector2(0.90f, 0.16f), 34, new Color(1f, 0.63f, 0.08f), TextAlignmentOptions.Center);
+
+            var retryButton = AddButtonRelative(failPanel, "RETRY", new Vector2(0.5f, 0.27f), new Vector2(0.58f, 0.18f), new Color(1f, 0.63f, 0.08f), null);
+            var continueButton = AddButtonRelative(failPanel, "CONTINUE", new Vector2(0.5f, 0.06f), new Vector2(0.58f, 0.12f), new Color(0.10f, 0.82f, 0.78f), null);
+            var hintButton = AddIconButton(root, "HINT  -5", "hint", new Vector2(0.5f, 0.085f), new Vector2(0.32f, 0.095f), new Color(0.55f, 0.22f, 1f), board.UseHint);
 
             var router = gameObject.AddComponent<LevelCompletionRouter>();
-            AddButton(successPanel, "NEXT LEVEL", new Vector2(0.5f, 0.30f), new Vector2(0.68f, 0.16f), new Color(1f, 0.63f, 0.08f), router.LoadNextLevel);
-            AddButton(successPanel, "MENU", new Vector2(0.5f, 0.09f), new Vector2(0.45f, 0.11f), new Color(0.13f, 0.18f, 0.34f), router.ReturnToMenu);
-            AddButton(pausePanel, "RESUME", new Vector2(0.5f, 0.30f), new Vector2(0.60f, 0.16f), new Color(0.10f, 0.82f, 0.78f), runtime.TogglePause);
-            AddButton(pausePanel, "MENU", new Vector2(0.5f, 0.10f), new Vector2(0.45f, 0.12f), new Color(0.13f, 0.18f, 0.34f), router.ReturnToMenu);
+            AddButtonRelative(successPanel, "NEXT LEVEL", new Vector2(0.5f, 0.30f), new Vector2(0.68f, 0.14f), new Color(1f, 0.63f, 0.08f), router.LoadNextLevel);
+            AddButtonRelative(successPanel, "MENU", new Vector2(0.5f, 0.09f), new Vector2(0.45f, 0.10f), new Color(0.13f, 0.18f, 0.34f), router.ReturnToMenu);
+            AddButtonRelative(pausePanel, "RESUME", new Vector2(0.5f, 0.30f), new Vector2(0.60f, 0.16f), new Color(0.10f, 0.82f, 0.78f), runtime.TogglePause);
+            AddButtonRelative(pausePanel, "MENU", new Vector2(0.5f, 0.10f), new Vector2(0.45f, 0.12f), new Color(0.13f, 0.18f, 0.34f), router.ReturnToMenu);
 
             var hud = gameObject.AddComponent<GameHudController>();
-            hud.Configure(runtime, pausePanel.gameObject, successPanel.gameObject, failPanel.gameObject, objectiveLabel, levelLabel, hintLabel, coinLabel, pauseButton, retryButton, continueButton, hintButton);
+            hud.Configure(runtime, pausePanel.gameObject, successPanel.gameObject, failPanel.gameObject, objectiveLabel, levelLabel, hintLabel, coinLabel,
+                pauseButton, retryButton, continueButton, hintButton, starVisuals, starsFallback, completionStatsLabel, completionCoinsLabel);
             var entry = LevelCatalogRuntime.All[selectedLevel - 1];
             hud.SetObjective(entry.objective, selectedLevel);
             var progression = FindFirstObjectByType<ProgressionService>();
@@ -192,7 +206,7 @@ namespace ImpossibleLevels.Core
             failPanel.gameObject.SetActive(false);
         }
 
-        private Canvas CreateCanvas(string name)
+        private Canvas CreateCanvas(string name, bool applySafeArea = false)
         {
             var canvasObject = new GameObject(name);
             canvasObject.transform.SetParent(transform, false);
@@ -203,6 +217,7 @@ namespace ImpossibleLevels.Core
             scaler.referenceResolution = new Vector2(1080f, 1920f);
             scaler.matchWidthOrHeight = 0.5f;
             canvasObject.AddComponent<GraphicRaycaster>();
+            if (applySafeArea) canvasObject.AddComponent<SafeAreaFitter>();
             return createdCanvas;
         }
 
@@ -372,6 +387,26 @@ namespace ImpossibleLevels.Core
             return button;
         }
 
+        private static Button AddButtonRelative(RectTransform parent, string label, Vector2 anchor, Vector2 size, Color color, UnityEngine.Events.UnityAction action)
+        {
+            var obj = new GameObject("Button_" + label.Replace(" ", "_"));
+            obj.transform.SetParent(parent, false);
+            var rect = obj.AddComponent<RectTransform>();
+            rect.anchorMin = anchor;
+            rect.anchorMax = anchor;
+            rect.sizeDelta = new Vector2(size.x * parent.rect.width, size.y * parent.rect.height);
+            rect.anchoredPosition = Vector2.zero;
+            var image = obj.AddComponent<Image>();
+            image.color = color;
+            var button = obj.AddComponent<Button>();
+            button.targetGraphic = image;
+            if (action != null) button.onClick.AddListener(action);
+            var motion = obj.AddComponent<MotionFeedback>();
+            button.onClick.AddListener(motion.Press);
+            AddTextRelative(rect, label, new Vector2(0.5f, 0.5f), Vector2.one, 27, Color.white, TextAlignmentOptions.Center);
+            return button;
+        }
+
         private static Button AddIconButton(Transform parent, string label, string iconName, Vector2 anchor, Vector2 size, Color color, UnityEngine.Events.UnityAction action)
         {
             var button = AddButton(parent, label, anchor, size, color, action);
@@ -385,6 +420,26 @@ namespace ImpossibleLevels.Core
                 labelText.rectTransform.anchorMax = new Vector2(0.94f, 0.25f);
                 labelText.rectTransform.sizeDelta = Vector2.zero;
                 labelText.fontSize = Mathf.Max(17f, labelText.fontSize * 0.72f);
+            }
+            return button;
+        }
+
+        private static Button AddGameplayIconButton(Transform parent, string label, Sprite sprite, Vector2 anchor, Vector2 size, Color color, UnityEngine.Events.UnityAction action)
+        {
+            var rectParent = parent as RectTransform;
+            var button = rectParent != null
+                ? AddButtonRelative(rectParent, label, anchor, size, color, action)
+                : AddButton(parent, label, anchor, size, color, action);
+            var rect = button.transform as RectTransform;
+            var icon = AddImagePanelRelative(rect, sprite, Color.white, new Vector2(0.5f, 0.64f), new Vector2(0.46f, 0.46f), true);
+            icon.raycastTarget = false;
+            var labelText = rect.GetComponentInChildren<TMP_Text>();
+            if (labelText != null)
+            {
+                labelText.rectTransform.anchorMin = new Vector2(0.04f, 0.04f);
+                labelText.rectTransform.anchorMax = new Vector2(0.96f, 0.25f);
+                labelText.rectTransform.sizeDelta = Vector2.zero;
+                labelText.fontSize = Mathf.Max(13f, labelText.fontSize * 0.58f);
             }
             return button;
         }
