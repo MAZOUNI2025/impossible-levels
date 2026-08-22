@@ -32,7 +32,9 @@ namespace ImpossibleLevels.UI
 
         public void ResetProgress()
         {
+            var selectedLanguage = LocalizationService.CurrentLanguage;
             PlayerPrefs.DeleteAll();
+            PlayerPrefs.SetString("il.language", selectedLanguage);
             PlayerPrefs.SetInt("il.highest_unlocked", 1);
             PlayerPrefs.SetInt("il.music", 1);
             PlayerPrefs.SetInt("il.sfx", 1);

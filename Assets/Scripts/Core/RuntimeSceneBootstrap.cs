@@ -49,7 +49,7 @@ namespace ImpossibleLevels.Core
 
             gameplayCamera.transform.position = new Vector3(0f, 0f, -10f);
             gameplayCamera.orthographic = true;
-            gameplayCamera.orthographicSize = 7.1f;
+            gameplayCamera.orthographicSize = 7.5f;
             gameplayCamera.clearFlags = CameraClearFlags.SolidColor;
             gameplayCamera.backgroundColor = new Color(0.035f, 0.055f, 0.14f);
         }
@@ -75,33 +75,37 @@ namespace ImpossibleLevels.Core
             AddImagePanel(mainScreen, ArtAssetLibrary.GetLevelThumbnail(12), new Color(1f, 1f, 1f, 0.12f), new Vector2(0.18f, 0.56f), new Vector2(0.30f, 0.24f), true);
             AddImagePanel(mainScreen, ArtAssetLibrary.GetLevelThumbnail(24), new Color(1f, 1f, 1f, 0.10f), new Vector2(0.82f, 0.58f), new Vector2(0.30f, 0.24f), true);
             AddPanel(mainScreen, new Color(0.035f, 0.055f, 0.14f, 0.78f), Vector2.zero, Vector2.one);
-            AddText(mainScreen, "IMPOSSIBLE LEVELS", new Vector2(0.5f, 0.82f), new Vector2(0.92f, 0.09f), 54, Color.white, TextAlignmentOptions.Center);
-            AddText(mainScreen, "Looks easy. Think again.", new Vector2(0.5f, 0.735f), new Vector2(0.86f, 0.05f), 25, new Color(0.10f, 0.82f, 0.78f), TextAlignmentOptions.Center);
-            AddText(mainScreen, "30 puzzles. One rule: question everything.", new Vector2(0.5f, 0.685f), new Vector2(0.86f, 0.04f), 17, new Color(0.78f, 0.82f, 0.94f), TextAlignmentOptions.Center);
+            AddText(mainScreen, LocalizationService.Get("GAME_TITLE"), new Vector2(0.5f, 0.82f), new Vector2(0.92f, 0.09f), 54, Color.white, TextAlignmentOptions.Center);
+            AddText(mainScreen, LocalizationService.Get("MENU_TAGLINE"), new Vector2(0.5f, 0.735f), new Vector2(0.86f, 0.05f), 25, new Color(0.10f, 0.82f, 0.78f), TextAlignmentOptions.Center);
+            AddText(mainScreen, LocalizationService.Get("MENU_SUBTITLE"), new Vector2(0.5f, 0.685f), new Vector2(0.86f, 0.04f), 17, new Color(0.78f, 0.82f, 0.94f), TextAlignmentOptions.Center);
 
             var menu = gameObject.AddComponent<MainMenuController>();
-            AddIconButton(mainScreen, "PLAY", "play", new Vector2(0.5f, 0.52f), new Vector2(0.34f, 0.14f), new Color(1f, 0.63f, 0.08f), menu.StartFirstLevel);
-            AddIconButton(mainScreen, "LEVEL MAP", "levels", new Vector2(0.5f, 0.36f), new Vector2(0.34f, 0.14f), new Color(0.10f, 0.82f, 0.78f), () => ShowScreen(mapScreen.gameObject, mainScreen.gameObject, profileScreen.gameObject, settingsScreen.gameObject));
-            AddIconButton(mainScreen, "PLAYER", "player", new Vector2(0.29f, 0.18f), new Vector2(0.26f, 0.13f), new Color(0.55f, 0.22f, 1f), () => ShowScreen(profileScreen.gameObject, mainScreen.gameObject, mapScreen.gameObject, settingsScreen.gameObject));
-            AddIconButton(mainScreen, "SETTINGS", "settings", new Vector2(0.71f, 0.18f), new Vector2(0.26f, 0.13f), new Color(0.13f, 0.18f, 0.34f), () => ShowScreen(settingsScreen.gameObject, mainScreen.gameObject, mapScreen.gameObject, profileScreen.gameObject));
-            AddText(mainScreen, "13+  |  30 deterministic puzzles  |  Offline progression", new Vector2(0.5f, 0.055f), new Vector2(0.92f, 0.035f), 17, new Color(0.7f, 0.75f, 0.88f), TextAlignmentOptions.Center);
+            AddIconButton(mainScreen, LocalizationService.Get("MENU_PLAY"), "play", new Vector2(0.5f, 0.52f), new Vector2(0.34f, 0.14f), new Color(1f, 0.63f, 0.08f), menu.StartFirstLevel);
+            AddIconButton(mainScreen, LocalizationService.Get("MENU_LEVEL_MAP"), "levels", new Vector2(0.5f, 0.36f), new Vector2(0.34f, 0.14f), new Color(0.10f, 0.82f, 0.78f), () => ShowScreen(mapScreen.gameObject, mainScreen.gameObject, profileScreen.gameObject, settingsScreen.gameObject));
+            AddIconButton(mainScreen, LocalizationService.Get("MENU_PROFILE"), "player", new Vector2(0.29f, 0.18f), new Vector2(0.26f, 0.13f), new Color(0.55f, 0.22f, 1f), () => ShowScreen(profileScreen.gameObject, mainScreen.gameObject, mapScreen.gameObject, settingsScreen.gameObject));
+            AddIconButton(mainScreen, LocalizationService.Get("MENU_SETTINGS"), "settings", new Vector2(0.71f, 0.18f), new Vector2(0.26f, 0.13f), new Color(0.13f, 0.18f, 0.34f), () => ShowScreen(settingsScreen.gameObject, mainScreen.gameObject, mapScreen.gameObject, profileScreen.gameObject));
+            AddText(mainScreen, LocalizationService.Get("MENU_FOOTER"), new Vector2(0.5f, 0.055f), new Vector2(0.92f, 0.035f), 17, new Color(0.7f, 0.75f, 0.88f), TextAlignmentOptions.Center);
 
             var mapController = gameObject.AddComponent<LevelMapController>();
             BuildLevelMap(mapScreen, mapController, mainScreen.gameObject, mapScreen.gameObject, profileScreen.gameObject, settingsScreen.gameObject);
             BuildProfile(profileScreen, mainScreen.gameObject, mapScreen.gameObject, profileScreen.gameObject, settingsScreen.gameObject);
             BuildSettings(settingsScreen, mainScreen.gameObject, mapScreen.gameObject, profileScreen.gameObject, settingsScreen.gameObject);
-            ShowScreen(mainScreen.gameObject, mapScreen.gameObject, profileScreen.gameObject, settingsScreen.gameObject);
+            var initialScreen = PlayerPrefs.GetString("il.main_menu_screen", string.Empty);
+            PlayerPrefs.DeleteKey("il.main_menu_screen");
+            if (initialScreen == "map") ShowScreen(mapScreen.gameObject, mainScreen.gameObject, profileScreen.gameObject, settingsScreen.gameObject);
+            else if (initialScreen == "settings") ShowScreen(settingsScreen.gameObject, mainScreen.gameObject, mapScreen.gameObject, profileScreen.gameObject);
+            else ShowScreen(mainScreen.gameObject, mapScreen.gameObject, profileScreen.gameObject, settingsScreen.gameObject);
         }
 
         private void BuildLevelMap(RectTransform screen, LevelMapController mapController, GameObject home, GameObject map, GameObject profile, GameObject settings)
         {
             AddPanel(screen, new Color(0.035f, 0.055f, 0.14f, 0.98f), Vector2.zero, Vector2.one);
             AddPanel(screen, new Color(0.10f, 0.82f, 0.78f, 0.10f), new Vector2(0.5f, 0.935f), new Vector2(0.92f, 0.12f));
-            AddText(screen, "LEVEL MAP", new Vector2(0.5f, 0.952f), new Vector2(0.80f, 0.055f), 40, Color.white, TextAlignmentOptions.Center);
-            AddText(screen, "Choose a challenge. Complete it to unlock the next.", new Vector2(0.5f, 0.895f), new Vector2(0.88f, 0.035f), 16, new Color(0.10f, 0.82f, 0.78f), TextAlignmentOptions.Center);
+            AddText(screen, LocalizationService.Get("MAP_TITLE"), new Vector2(0.5f, 0.952f), new Vector2(0.80f, 0.055f), 40, Color.white, TextAlignmentOptions.Center);
+            AddText(screen, LocalizationService.Get("MAP_SUBTITLE"), new Vector2(0.5f, 0.895f), new Vector2(0.88f, 0.035f), 16, new Color(0.10f, 0.82f, 0.78f), TextAlignmentOptions.Center);
 
             var selectedLevel = Mathf.Clamp(PlayerPrefs.GetInt("il.selected_level", 1), 1, TotalLevels);
-            var currentLabel = AddText(screen, "CURRENT LEVEL  " + selectedLevel.ToString("00"), new Vector2(0.5f, 0.845f), new Vector2(0.78f, 0.035f), 17, new Color(1f, 0.78f, 0.24f), TextAlignmentOptions.Center);
+            var currentLabel = AddText(screen, LocalizationService.Format("MAP_CURRENT", selectedLevel), new Vector2(0.5f, 0.845f), new Vector2(0.78f, 0.035f), 17, new Color(1f, 0.78f, 0.24f), TextAlignmentOptions.Center);
             currentLabel.raycastTarget = false;
 
             var scroll = CreateScrollView(screen, new Vector2(0.5f, 0.485f), new Vector2(0.90f, 0.67f));
@@ -113,13 +117,13 @@ namespace ImpossibleLevels.Core
                 AddLevelCard(content, entry, mapController, () => mapController.SelectLevel(capturedLevel));
             }
 
-            AddButton(screen, "BACK", new Vector2(0.5f, 0.065f), new Vector2(0.32f, 0.07f), new Color(0.13f, 0.18f, 0.34f), () => ShowScreen(home, map, profile, settings));
+            AddButton(screen, LocalizationService.Get("MENU_BACK"), new Vector2(0.5f, 0.065f), new Vector2(0.32f, 0.07f), new Color(0.13f, 0.18f, 0.34f), () => ShowScreen(home, map, profile, settings));
         }
 
         private void BuildProfile(RectTransform screen, GameObject home, GameObject map, GameObject profile, GameObject settings)
         {
             AddPanel(screen, new Color(0.035f, 0.055f, 0.14f, 0.98f), Vector2.zero, Vector2.one);
-            AddText(screen, "PLAYER PROFILE", new Vector2(0.5f, 0.90f), new Vector2(0.84f, 0.08f), 43, Color.white, TextAlignmentOptions.Center);
+            AddText(screen, LocalizationService.Get("PROFILE_TITLE"), new Vector2(0.5f, 0.90f), new Vector2(0.84f, 0.08f), 43, Color.white, TextAlignmentOptions.Center);
             AddImagePanel(screen, ArtAssetLibrary.GetUiIcon("player"), Color.white, new Vector2(0.5f, 0.72f), new Vector2(0.22f, 0.13f), true);
 
             var progression = FindFirstObjectByType<ProgressionService>();
@@ -129,25 +133,25 @@ namespace ImpossibleLevels.Core
             var coins = progression != null ? progression.Coins : 0;
             var progress = Mathf.Clamp01(completed / (float)TotalLevels);
 
-            AddText(screen, "PROGRESS", new Vector2(0.5f, 0.57f), new Vector2(0.76f, 0.045f), 19, new Color(0.10f, 0.82f, 0.78f), TextAlignmentOptions.Center);
+            AddText(screen, LocalizationService.Get("PROFILE_PROGRESS"), new Vector2(0.5f, 0.57f), new Vector2(0.76f, 0.045f), 19, new Color(0.10f, 0.82f, 0.78f), TextAlignmentOptions.Center);
             AddPanel(screen, new Color(0.08f, 0.10f, 0.19f, 1f), new Vector2(0.5f, 0.515f), new Vector2(0.72f, 0.028f));
             if (progress > 0f)
             {
                 AddPanel(screen, new Color(0.10f, 0.82f, 0.78f, 1f), new Vector2(progress * 0.36f, 0.515f), new Vector2(0.72f * progress, 0.028f));
             }
-            AddText(screen, "COMPLETED   " + completed + " / 30", new Vector2(0.5f, 0.45f), new Vector2(0.75f, 0.055f), 25, Color.white, TextAlignmentOptions.Center);
+            AddText(screen, LocalizationService.Format("PROFILE_COMPLETED", completed), new Vector2(0.5f, 0.45f), new Vector2(0.75f, 0.055f), 25, Color.white, TextAlignmentOptions.Center);
             AddImagePanel(screen, ArtAssetLibrary.GetGameplaySprite("star_filled"), Color.white, new Vector2(0.30f, 0.36f), new Vector2(0.065f, 0.052f), true);
             AddText(screen, stars + " / 90", new Vector2(0.45f, 0.36f), new Vector2(0.26f, 0.055f), 25, new Color(1f, 0.78f, 0.24f), TextAlignmentOptions.Left);
             AddImagePanel(screen, ArtAssetLibrary.GetGameplaySprite("coin"), Color.white, new Vector2(0.58f, 0.36f), new Vector2(0.065f, 0.052f), true);
             AddText(screen, coins.ToString(), new Vector2(0.72f, 0.36f), new Vector2(0.20f, 0.055f), 25, new Color(1f, 0.63f, 0.08f), TextAlignmentOptions.Left);
-            AddText(screen, "Keep solving. The board remembers your best stars.", new Vector2(0.5f, 0.26f), new Vector2(0.86f, 0.05f), 18, new Color(0.72f, 0.78f, 0.92f), TextAlignmentOptions.Center);
-            AddButton(screen, "BACK", new Vector2(0.5f, 0.10f), new Vector2(0.32f, 0.07f), new Color(0.13f, 0.18f, 0.34f), () => ShowScreen(home, map, profile, settings));
+            AddText(screen, LocalizationService.Get("PROFILE_HINT"), new Vector2(0.5f, 0.26f), new Vector2(0.86f, 0.05f), 18, new Color(0.72f, 0.78f, 0.92f), TextAlignmentOptions.Center);
+            AddButton(screen, LocalizationService.Get("MENU_BACK"), new Vector2(0.5f, 0.10f), new Vector2(0.32f, 0.07f), new Color(0.13f, 0.18f, 0.34f), () => ShowScreen(home, map, profile, settings));
         }
 
         private void BuildSettings(RectTransform screen, GameObject home, GameObject map, GameObject profile, GameObject settingsScreen)
         {
             AddPanel(screen, new Color(0.035f, 0.055f, 0.14f, 0.98f), Vector2.zero, Vector2.one);
-            AddText(screen, "SETTINGS", new Vector2(0.5f, 0.90f), new Vector2(0.8f, 0.08f), 46, Color.white, TextAlignmentOptions.Center);
+            AddText(screen, LocalizationService.Get("SETTINGS_TITLE"), new Vector2(0.5f, 0.90f), new Vector2(0.8f, 0.08f), 46, Color.white, TextAlignmentOptions.Center);
             AddImagePanel(screen, ArtAssetLibrary.GetUiIcon("settings"), Color.white, new Vector2(0.5f, 0.72f), new Vector2(0.20f, 0.12f), true);
 
             var controller = gameObject.AddComponent<SettingsController>();
@@ -158,19 +162,22 @@ namespace ImpossibleLevels.Core
             var activeColor = new Color(0.10f, 0.82f, 0.78f);
             var inactiveColor = new Color(0.13f, 0.18f, 0.34f);
 
-            AddText(screen, "AUDIO & FEEDBACK", new Vector2(0.5f, 0.56f), new Vector2(0.82f, 0.05f), 22, activeColor, TextAlignmentOptions.Center);
-            var musicState = AddText(screen, "MUSIC  " + (musicEnabled ? "ON" : "OFF"), new Vector2(0.16f, 0.47f), new Vector2(0.20f, 0.05f), 18, Color.white, TextAlignmentOptions.Left);
-            AddButton(screen, "ON", new Vector2(0.43f, 0.47f), new Vector2(0.20f, 0.08f), musicEnabled ? activeColor : inactiveColor, () => { controller.SetMusic(true); musicState.text = "MUSIC  ON"; });
-            AddButton(screen, "OFF", new Vector2(0.70f, 0.47f), new Vector2(0.20f, 0.08f), musicEnabled ? inactiveColor : new Color(0.55f, 0.22f, 1f), () => { controller.SetMusic(false); musicState.text = "MUSIC  OFF"; });
-            var sfxState = AddText(screen, "SFX  " + (sfxEnabled ? "ON" : "OFF"), new Vector2(0.16f, 0.37f), new Vector2(0.20f, 0.05f), 18, Color.white, TextAlignmentOptions.Left);
-            AddButton(screen, "ON", new Vector2(0.43f, 0.37f), new Vector2(0.20f, 0.08f), sfxEnabled ? activeColor : inactiveColor, () => { controller.SetSfx(true); sfxState.text = "SFX  ON"; });
-            AddButton(screen, "OFF", new Vector2(0.70f, 0.37f), new Vector2(0.20f, 0.08f), sfxEnabled ? inactiveColor : new Color(0.55f, 0.22f, 1f), () => { controller.SetSfx(false); sfxState.text = "SFX  OFF"; });
-            var hapticsState = AddText(screen, "HAPTICS  " + (hapticsEnabled ? "ON" : "OFF"), new Vector2(0.16f, 0.27f), new Vector2(0.22f, 0.05f), 18, Color.white, TextAlignmentOptions.Left);
-            AddButton(screen, "ON", new Vector2(0.43f, 0.27f), new Vector2(0.20f, 0.08f), hapticsEnabled ? activeColor : inactiveColor, () => { controller.SetHaptics(true); hapticsState.text = "HAPTICS  ON"; });
-            AddButton(screen, "OFF", new Vector2(0.70f, 0.27f), new Vector2(0.20f, 0.08f), hapticsEnabled ? inactiveColor : new Color(0.55f, 0.22f, 1f), () => { controller.SetHaptics(false); hapticsState.text = "HAPTICS  OFF"; });
-            AddText(screen, "RESET LOCAL PROGRESS", new Vector2(0.5f, 0.18f), new Vector2(0.8f, 0.04f), 18, new Color(0.78f, 0.82f, 0.94f), TextAlignmentOptions.Center);
-            AddButton(screen, "RESET", new Vector2(0.5f, 0.125f), new Vector2(0.30f, 0.065f), new Color(0.55f, 0.22f, 1f), controller.ResetProgress);
-            AddButton(screen, "BACK", new Vector2(0.5f, 0.055f), new Vector2(0.32f, 0.06f), inactiveColor, () => ShowScreen(home, map, profile, settingsScreen));
+            AddText(screen, LocalizationService.Get("SETTINGS_AUDIO"), new Vector2(0.5f, 0.56f), new Vector2(0.82f, 0.05f), 22, activeColor, TextAlignmentOptions.Center);
+            var musicState = AddText(screen, LocalizationService.Get("SETTINGS_MUSIC") + "  " + LocalizationService.Get(musicEnabled ? "SETTINGS_ON" : "SETTINGS_OFF"), new Vector2(0.16f, 0.47f), new Vector2(0.20f, 0.05f), 18, Color.white, TextAlignmentOptions.Left);
+            AddButton(screen, LocalizationService.Get("SETTINGS_ON"), new Vector2(0.43f, 0.47f), new Vector2(0.20f, 0.08f), musicEnabled ? activeColor : inactiveColor, () => { controller.SetMusic(true); musicState.text = LocalizationService.Get("SETTINGS_MUSIC") + "  " + LocalizationService.Get("SETTINGS_ON"); });
+            AddButton(screen, LocalizationService.Get("SETTINGS_OFF"), new Vector2(0.70f, 0.47f), new Vector2(0.20f, 0.08f), musicEnabled ? inactiveColor : new Color(0.55f, 0.22f, 1f), () => { controller.SetMusic(false); musicState.text = LocalizationService.Get("SETTINGS_MUSIC") + "  " + LocalizationService.Get("SETTINGS_OFF"); });
+            var sfxState = AddText(screen, LocalizationService.Get("SETTINGS_SFX") + "  " + LocalizationService.Get(sfxEnabled ? "SETTINGS_ON" : "SETTINGS_OFF"), new Vector2(0.16f, 0.37f), new Vector2(0.20f, 0.05f), 18, Color.white, TextAlignmentOptions.Left);
+            AddButton(screen, LocalizationService.Get("SETTINGS_ON"), new Vector2(0.43f, 0.37f), new Vector2(0.20f, 0.08f), sfxEnabled ? activeColor : inactiveColor, () => { controller.SetSfx(true); sfxState.text = LocalizationService.Get("SETTINGS_SFX") + "  " + LocalizationService.Get("SETTINGS_ON"); });
+            AddButton(screen, LocalizationService.Get("SETTINGS_OFF"), new Vector2(0.70f, 0.37f), new Vector2(0.20f, 0.08f), sfxEnabled ? inactiveColor : new Color(0.55f, 0.22f, 1f), () => { controller.SetSfx(false); sfxState.text = LocalizationService.Get("SETTINGS_SFX") + "  " + LocalizationService.Get("SETTINGS_OFF"); });
+            var hapticsState = AddText(screen, LocalizationService.Get("SETTINGS_HAPTICS") + "  " + LocalizationService.Get(hapticsEnabled ? "SETTINGS_ON" : "SETTINGS_OFF"), new Vector2(0.16f, 0.27f), new Vector2(0.22f, 0.05f), 18, Color.white, TextAlignmentOptions.Left);
+            AddButton(screen, LocalizationService.Get("SETTINGS_ON"), new Vector2(0.43f, 0.27f), new Vector2(0.20f, 0.08f), hapticsEnabled ? activeColor : inactiveColor, () => { controller.SetHaptics(true); hapticsState.text = LocalizationService.Get("SETTINGS_HAPTICS") + "  " + LocalizationService.Get("SETTINGS_ON"); });
+            AddButton(screen, LocalizationService.Get("SETTINGS_OFF"), new Vector2(0.70f, 0.27f), new Vector2(0.20f, 0.08f), hapticsEnabled ? inactiveColor : new Color(0.55f, 0.22f, 1f), () => { controller.SetHaptics(false); hapticsState.text = LocalizationService.Get("SETTINGS_HAPTICS") + "  " + LocalizationService.Get("SETTINGS_OFF"); });
+            AddText(screen, LocalizationService.Get("SETTINGS_LANGUAGE"), new Vector2(0.5f, 0.19f), new Vector2(0.82f, 0.045f), 20, activeColor, TextAlignmentOptions.Center);
+            AddButton(screen, LocalizationService.Get("SETTINGS_ENGLISH"), new Vector2(0.36f, 0.135f), new Vector2(0.28f, 0.075f), LocalizationService.CurrentLanguage == "en" ? activeColor : inactiveColor, () => { LocalizationService.SetLanguage("en"); SceneManager.LoadScene(SceneManager.GetActiveScene().name); });
+            AddButton(screen, LocalizationService.Get("SETTINGS_ARABIC"), new Vector2(0.64f, 0.135f), new Vector2(0.28f, 0.075f), LocalizationService.CurrentLanguage == "ar" ? activeColor : inactiveColor, () => { LocalizationService.SetLanguage("ar"); SceneManager.LoadScene(SceneManager.GetActiveScene().name); });
+            AddText(screen, LocalizationService.Get("SETTINGS_RESET"), new Vector2(0.5f, 0.075f), new Vector2(0.80f, 0.025f), 15, new Color(0.78f, 0.82f, 0.94f), TextAlignmentOptions.Center);
+            AddButton(screen, LocalizationService.Get("SETTINGS_RESET_BUTTON"), new Vector2(0.30f, 0.0325f), new Vector2(0.26f, 0.050f), new Color(0.55f, 0.22f, 1f), controller.ResetProgress);
+            AddButton(screen, LocalizationService.Get("MENU_BACK"), new Vector2(0.70f, 0.0325f), new Vector2(0.26f, 0.050f), inactiveColor, () => ShowScreen(home, map, profile, settingsScreen));
         }
 
         private void BuildGameplay()
@@ -186,48 +193,53 @@ namespace ImpossibleLevels.Core
             var selectedLevel = Mathf.Clamp(PlayerPrefs.GetInt("il.selected_level", 1), 1, TotalLevels);
 
             var hudBar = AddPanel(root, new Color(0.035f, 0.055f, 0.14f, 0.96f), new Vector2(0.5f, 0.925f), new Vector2(1f, 0.15f));
-            var levelLabel = AddTextRelative(hudBar, "LEVEL", new Vector2(0.13f, 0.50f), new Vector2(0.22f, 0.62f), 26, Color.white, TextAlignmentOptions.Left);
+            var levelLabel = AddTextRelative(hudBar, LocalizationService.Get("GAME_LEVEL_SHORT"), new Vector2(0.13f, 0.50f), new Vector2(0.22f, 0.62f), 26, Color.white, TextAlignmentOptions.Left);
             var starVisuals = new Image[3];
             for (var i = 0; i < starVisuals.Length; i++)
             {
                 starVisuals[i] = AddImagePanelRelative(hudBar, ArtAssetLibrary.GetGameplaySprite("star_empty"), Color.white,
                     new Vector2(0.40f + i * 0.055f, 0.50f), new Vector2(0.045f, 0.54f), true);
             }
-            var starsFallback = AddTextRelative(hudBar, "☆☆☆", new Vector2(0.49f, 0.50f), new Vector2(0.18f, 0.55f), 24, new Color(1f, 0.78f, 0.24f), TextAlignmentOptions.Center);
+            var starsFallback = AddTextRelative(hudBar, StarString(0), new Vector2(0.49f, 0.50f), new Vector2(0.18f, 0.55f), 24, new Color(1f, 0.78f, 0.24f), TextAlignmentOptions.Center);
             AddImagePanelRelative(hudBar, ArtAssetLibrary.GetGameplaySprite("coin"), Color.white,
                 new Vector2(0.68f, 0.50f), new Vector2(0.055f, 0.60f), true);
             var coinLabel = AddTextRelative(hudBar, "0", new Vector2(0.77f, 0.50f), new Vector2(0.15f, 0.58f), 25, new Color(1f, 0.78f, 0.24f), TextAlignmentOptions.Left);
-            var pauseButton = AddGameplayIconButton(hudBar, "PAUSE", ArtAssetLibrary.GetGameplaySprite("pause"),
+            var pauseButton = AddGameplayIconButton(hudBar, LocalizationService.Get("GAME_PAUSE"), ArtAssetLibrary.GetGameplaySprite("pause"),
                 new Vector2(0.92f, 0.50f), new Vector2(0.12f, 0.82f), new Color(0.13f, 0.18f, 0.34f), null);
 
             var objectivePanel = AddPanel(root, new Color(0.035f, 0.055f, 0.14f, 0.78f), new Vector2(0.5f, 0.795f), new Vector2(0.90f, 0.075f));
-            var objectiveLabel = AddTextRelative(objectivePanel, "Find the key and open the door.", new Vector2(0.5f, 0.50f), new Vector2(0.94f, 0.70f), 20, Color.white, TextAlignmentOptions.Center);
+            var objectiveLabel = AddTextRelative(objectivePanel, LocalizationService.Get("GAME_OBJECTIVE"), new Vector2(0.5f, 0.50f), new Vector2(0.94f, 0.70f), 20, Color.white, TextAlignmentOptions.Center);
             var hintLabel = AddText(root, "", new Vector2(0.5f, 0.18f), new Vector2(0.88f, 0.055f), 19, new Color(0.10f, 0.82f, 0.78f), TextAlignmentOptions.Center);
 
             var pausePanel = AddPanel(root, new Color(0.035f, 0.055f, 0.14f, 0.98f), new Vector2(0.5f, 0.50f), new Vector2(0.72f, 0.42f));
-            AddTextRelative(pausePanel, "PAUSED", new Vector2(0.5f, 0.68f), new Vector2(0.90f, 0.18f), 42, Color.white, TextAlignmentOptions.Center);
+            AddTextRelative(pausePanel, LocalizationService.Get("GAME_PAUSE"), new Vector2(0.5f, 0.68f), new Vector2(0.90f, 0.18f), 42, Color.white, TextAlignmentOptions.Center);
             var successPanel = AddPanel(root, new Color(0.035f, 0.055f, 0.14f, 0.98f), new Vector2(0.5f, 0.50f), new Vector2(0.82f, 0.52f));
-            AddTextRelative(successPanel, "LEVEL COMPLETE", new Vector2(0.5f, 0.78f), new Vector2(0.90f, 0.14f), 34, new Color(0.10f, 0.82f, 0.78f), TextAlignmentOptions.Center);
-            var completionStatsLabel = AddTextRelative(successPanel, "STARS 0 / 3", new Vector2(0.5f, 0.60f), new Vector2(0.82f, 0.08f), 23, new Color(1f, 0.78f, 0.24f), TextAlignmentOptions.Center);
-            var completionCoinsLabel = AddTextRelative(successPanel, "COINS +0", new Vector2(0.5f, 0.50f), new Vector2(0.82f, 0.08f), 22, new Color(1f, 0.63f, 0.08f), TextAlignmentOptions.Center);
+            AddTextRelative(successPanel, LocalizationService.Get("GAME_COMPLETE"), new Vector2(0.5f, 0.78f), new Vector2(0.90f, 0.14f), 34, new Color(0.10f, 0.82f, 0.78f), TextAlignmentOptions.Center);
+            var completionStatsLabel = AddTextRelative(successPanel, LocalizationService.Format("GAME_STARS_EARNED", 0), new Vector2(0.5f, 0.60f), new Vector2(0.82f, 0.08f), 23, new Color(1f, 0.78f, 0.24f), TextAlignmentOptions.Center);
+            var completionCoinsLabel = AddTextRelative(successPanel, LocalizationService.Format("GAME_COINS_EARNED", 0), new Vector2(0.5f, 0.50f), new Vector2(0.82f, 0.08f), 22, new Color(1f, 0.63f, 0.08f), TextAlignmentOptions.Center);
             var failPanel = AddPanel(root, new Color(0.035f, 0.055f, 0.14f, 0.98f), new Vector2(0.5f, 0.50f), new Vector2(0.78f, 0.42f));
-            AddTextRelative(failPanel, "TRY AGAIN", new Vector2(0.5f, 0.72f), new Vector2(0.90f, 0.16f), 34, new Color(1f, 0.63f, 0.08f), TextAlignmentOptions.Center);
+            AddTextRelative(failPanel, LocalizationService.Get("GAME_FAILED"), new Vector2(0.5f, 0.72f), new Vector2(0.90f, 0.16f), 34, new Color(1f, 0.63f, 0.08f), TextAlignmentOptions.Center);
 
-            var retryButton = AddButtonRelative(failPanel, "RETRY", new Vector2(0.5f, 0.27f), new Vector2(0.58f, 0.18f), new Color(1f, 0.63f, 0.08f), null);
-            var continueButton = AddButtonRelative(failPanel, "CONTINUE", new Vector2(0.5f, 0.06f), new Vector2(0.58f, 0.12f), new Color(0.10f, 0.82f, 0.78f), null);
-            var hintButton = AddIconButton(root, "HINT  -5", "hint", new Vector2(0.5f, 0.085f), new Vector2(0.32f, 0.095f), new Color(0.55f, 0.22f, 1f), board.UseHint);
+            var retryButton = AddButtonRelative(failPanel, LocalizationService.Get("GAME_RETRY"), new Vector2(0.5f, 0.27f), new Vector2(0.58f, 0.18f), new Color(1f, 0.63f, 0.08f), null);
+            var continueButton = AddButtonRelative(failPanel, LocalizationService.Get("GAME_CONTINUE"), new Vector2(0.5f, 0.06f), new Vector2(0.58f, 0.12f), new Color(0.10f, 0.82f, 0.78f), null);
+            var hintButton = AddIconButton(root, LocalizationService.Get("GAME_HINT_BUTTON"), "hint", new Vector2(0.5f, 0.085f), new Vector2(0.32f, 0.095f), new Color(0.55f, 0.22f, 1f), board.UseHint);
 
             var router = gameObject.AddComponent<LevelCompletionRouter>();
-            AddButtonRelative(successPanel, "NEXT LEVEL", new Vector2(0.5f, 0.30f), new Vector2(0.68f, 0.14f), new Color(1f, 0.63f, 0.08f), router.LoadNextLevel);
-            AddButtonRelative(successPanel, "MENU", new Vector2(0.5f, 0.09f), new Vector2(0.45f, 0.10f), new Color(0.13f, 0.18f, 0.34f), router.ReturnToMenu);
-            AddButtonRelative(pausePanel, "RESUME", new Vector2(0.5f, 0.30f), new Vector2(0.60f, 0.16f), new Color(0.10f, 0.82f, 0.78f), runtime.TogglePause);
-            AddButtonRelative(pausePanel, "MENU", new Vector2(0.5f, 0.10f), new Vector2(0.45f, 0.12f), new Color(0.13f, 0.18f, 0.34f), router.ReturnToMenu);
+            AddButtonRelative(successPanel, LocalizationService.Get("GAME_NEXT"), new Vector2(0.5f, 0.30f), new Vector2(0.68f, 0.14f), new Color(1f, 0.63f, 0.08f), router.LoadNextLevel);
+            AddButtonRelative(successPanel, LocalizationService.Get("GAME_REPLAY"), new Vector2(0.30f, 0.16f), new Vector2(0.28f, 0.12f), new Color(0.10f, 0.82f, 0.78f), router.ReplayLevel);
+            AddButtonRelative(successPanel, LocalizationService.Get("GAME_LEVEL_MAP"), new Vector2(0.70f, 0.16f), new Vector2(0.34f, 0.12f), new Color(0.55f, 0.22f, 1f), router.ReturnToLevelMap);
+            AddButtonRelative(successPanel, LocalizationService.Get("GAME_MENU"), new Vector2(0.5f, 0.06f), new Vector2(0.42f, 0.08f), new Color(0.13f, 0.18f, 0.34f), router.ReturnToMenu);
+            AddButtonRelative(pausePanel, LocalizationService.Get("GAME_RESUME"), new Vector2(0.5f, 0.45f), new Vector2(0.60f, 0.16f), new Color(0.10f, 0.82f, 0.78f), runtime.TogglePause);
+            AddButtonRelative(pausePanel, LocalizationService.Get("GAME_RESTART"), new Vector2(0.5f, 0.26f), new Vector2(0.60f, 0.14f), new Color(1f, 0.63f, 0.08f), router.ReplayLevel);
+            AddButtonRelative(pausePanel, LocalizationService.Get("GAME_SETTINGS"), new Vector2(0.30f, 0.08f), new Vector2(0.28f, 0.12f), new Color(0.55f, 0.22f, 1f), router.OpenSettings);
+            AddButtonRelative(pausePanel, LocalizationService.Get("GAME_EXIT"), new Vector2(0.70f, 0.08f), new Vector2(0.38f, 0.12f), new Color(0.13f, 0.18f, 0.34f), router.ReturnToLevelMap);
 
             var hud = gameObject.AddComponent<GameHudController>();
             hud.Configure(runtime, pausePanel.gameObject, successPanel.gameObject, failPanel.gameObject, objectiveLabel, levelLabel, hintLabel, coinLabel,
                 pauseButton, retryButton, continueButton, hintButton, starVisuals, starsFallback, completionStatsLabel, completionCoinsLabel);
             var entry = LevelCatalogRuntime.All[selectedLevel - 1];
             hud.SetObjective(entry.objective, selectedLevel);
+            hud.SetLevelHint(entry.hint);
             var progression = FindFirstObjectByType<ProgressionService>();
             if (progression != null) hud.SetCoins(progression.Coins);
             pausePanel.gameObject.SetActive(false);
@@ -530,16 +542,16 @@ namespace ImpossibleLevels.Core
             thumb.raycastTarget = false;
             AddTextRelative(card, entry.index.ToString("00"), new Vector2(0.13f, 0.92f), new Vector2(0.20f, 0.12f), 25, Color.white, TextAlignmentOptions.Center);
             AddLevelStars(card, mapController.GetLevelStars(entry.index));
-            AddTextRelative(card, entry.title, new Vector2(0.5f, 0.15f), new Vector2(0.90f, 0.16f), 16, Color.white, TextAlignmentOptions.Center);
+            AddTextRelative(card, LocalizationService.GetLevelTitle(entry.index, entry.title), new Vector2(0.5f, 0.15f), new Vector2(0.90f, 0.16f), 16, Color.white, TextAlignmentOptions.Center);
             if (isCurrent)
             {
                 AddPanelRelative(card, new Color(1f, 0.78f, 0.24f, 0.92f), new Vector2(0.77f, 0.27f), new Vector2(0.28f, 0.08f));
-                AddTextRelative(card, "CURRENT", new Vector2(0.77f, 0.27f), new Vector2(0.26f, 0.07f), 13, new Color(0.035f, 0.055f, 0.14f), TextAlignmentOptions.Center);
+                AddTextRelative(card, LocalizationService.Get("LEVEL_CURRENT"), new Vector2(0.77f, 0.27f), new Vector2(0.26f, 0.07f), 13, new Color(0.035f, 0.055f, 0.14f), TextAlignmentOptions.Center);
             }
             if (!unlocked)
             {
                 AddPanelRelative(card, new Color(0.01f, 0.02f, 0.07f, 0.58f), new Vector2(0.5f, 0.62f), new Vector2(0.90f, 0.58f));
-                AddTextRelative(card, "LOCKED", new Vector2(0.5f, 0.60f), new Vector2(0.8f, 0.14f), 22, Color.white, TextAlignmentOptions.Center);
+                AddTextRelative(card, LocalizationService.Get("LEVEL_LOCKED"), new Vector2(0.5f, 0.60f), new Vector2(0.8f, 0.14f), 22, Color.white, TextAlignmentOptions.Center);
             }
         }
 
@@ -588,6 +600,7 @@ namespace ImpossibleLevels.Core
             text.alignment = alignment;
             text.textWrappingMode = TextWrappingModes.Normal;
             text.overflowMode = TextOverflowModes.Ellipsis;
+            LocalizationService.ApplyTo(text);
         }
 
         private static void ConfigureButton(Button button, Color color)

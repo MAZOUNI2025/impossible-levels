@@ -46,6 +46,7 @@ namespace ImpossibleLevels.UI
         private Coroutine coinPulse;
         private Coroutine hintPulse;
         private int lastDisplayedCoins = -1;
+        private string levelHint;
 
         public void Configure(LevelRuntime runtime, GameObject pause, GameObject success, GameObject fail,
             TMP_Text objective, TMP_Text level, TMP_Text hint, TMP_Text coins,
@@ -96,9 +97,14 @@ namespace ImpossibleLevels.UI
 
         public void SetObjective(string objective, int levelIndex)
         {
-            if (objectiveLabel != null) objectiveLabel.text = objective;
-            if (levelLabel != null) levelLabel.text = $"LEVEL {levelIndex:00}";
+            if (objectiveLabel != null) objectiveLabel.text = LocalizationService.GetLevelObjective(levelIndex, objective);
+            if (levelLabel != null) levelLabel.text = LocalizationService.Format("GAME_LEVEL", levelIndex);
             RefreshStars();
+        }
+
+        public void SetLevelHint(string hint)
+        {
+            levelHint = hint;
         }
 
         public void SetCoins(int coins)
@@ -116,7 +122,7 @@ namespace ImpossibleLevels.UI
         {
             if (hintLabel != null)
             {
-                hintLabel.text = hint;
+                hintLabel.text = LocalizationService.GetLevelHint(levelRuntime != null ? levelRuntime.LevelIndex : 1, hint);
                 hintLabel.color = new Color(0.10f, 0.95f, 0.82f);
                 PulseTransform(hintLabel.rectTransform, ref hintPulse, 1.03f, 0.10f);
             }
@@ -163,7 +169,7 @@ namespace ImpossibleLevels.UI
         {
             if (hintLabel != null)
             {
-                SetHint("Look at the object that does not behave as expected.");
+                SetHint(levelHint ?? LocalizationService.Get("GAME_HINT"));
             }
         }
 
@@ -242,8 +248,8 @@ namespace ImpossibleLevels.UI
                 reward = levelRuntime.CalculateCoinReward(stars);
             }
 
-            if (completionStatsLabel != null) completionStatsLabel.text = $"STARS EARNED  {stars} / 3";
-            if (completionCoinsLabel != null) completionCoinsLabel.text = $"COINS EARNED  +{reward}";
+            if (completionStatsLabel != null) completionStatsLabel.text = LocalizationService.Format("GAME_STARS_EARNED", stars);
+            if (completionCoinsLabel != null) completionCoinsLabel.text = LocalizationService.Format("GAME_COINS_EARNED", reward);
             RefreshStars();
             RefreshCoinsFromProgression();
         }

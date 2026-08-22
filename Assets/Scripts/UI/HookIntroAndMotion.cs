@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.UI;
+using TMPro;
 using ImpossibleLevels.Audio;
 
 namespace ImpossibleLevels.UI
@@ -11,21 +11,26 @@ namespace ImpossibleLevels.UI
         [SerializeField] private CanvasGroup overlay;
         [SerializeField] private RectTransform keyVisual;
         [SerializeField] private RectTransform doorVisual;
-        [SerializeField] private Text message;
+        [SerializeField] private TMP_Text message;
         [SerializeField] private float duration = 3.2f;
 
         private IEnumerator Start()
         {
             if (overlay == null) yield break;
             overlay.alpha = 1f;
-            if (message != null) message.text = "Open the door.";
+            if (message != null)
+            {
+                message.alignment = LocalizationService.IsArabic ? TextAlignmentOptions.Right : TextAlignmentOptions.Center;
+                LocalizationService.ApplyTo(message);
+                message.text = LocalizationService.Get("HOOK_OPEN");
+            }
             yield return new WaitForSecondsRealtime(0.55f);
-            if (message != null) message.text = "Not yet.";
+            if (message != null) message.text = LocalizationService.Get("HOOK_NOT_YET");
             yield return Pulse(doorVisual, 0.18f);
             if (keyVisual != null) keyVisual.localScale = Vector3.one * 1.12f;
             if (AudioDirector.Instance != null) AudioDirector.Instance.Invalid();
             yield return new WaitForSecondsRealtime(0.4f);
-            if (message != null) message.text = "Looks Easy. Think Again.";
+            if (message != null) message.text = LocalizationService.Get("HOOK_TITLE");
             if (AudioDirector.Instance != null) AudioDirector.Instance.KeyPickup();
             yield return new WaitForSecondsRealtime(duration - 1.1f);
             yield return FadeOut();
