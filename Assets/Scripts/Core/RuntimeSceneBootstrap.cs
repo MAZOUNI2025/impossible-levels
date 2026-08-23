@@ -257,6 +257,11 @@ namespace ImpossibleLevels.Core
             var objectiveLabel = AddTextRelative(objectivePanel, LocalizationService.Get("GAME_OBJECTIVE"), new Vector2(0.5f, 0.59f), new Vector2(0.94f, 0.56f), 20, Color.white, TextAlignmentOptions.Center);
             var hintLabel = AddText(root, "", new Vector2(0.5f, 0.18f), new Vector2(0.88f, 0.055f), 19, new Color(0.10f, 0.82f, 0.78f), TextAlignmentOptions.Center);
 
+            if (selectedLevel == 1 && HookIntroController.ShouldShowFirstLevelTutorial)
+            {
+                BuildFirstLevelTutorial(root);
+            }
+
             var pausePanel = AddPanel(root, new Color(0.035f, 0.055f, 0.14f, 0.98f), new Vector2(0.5f, 0.50f), new Vector2(0.72f, 0.42f));
             AddImagePanelRelative(pausePanel, ArtAssetLibrary.GetGameplaySprite("pause"), Color.white, new Vector2(0.20f, 0.70f), new Vector2(0.10f, 0.16f), true);
             AddTextRelative(pausePanel, LocalizationService.Get("GAME_PAUSE"), new Vector2(0.56f, 0.68f), new Vector2(0.70f, 0.18f), 42, Color.white, TextAlignmentOptions.Left);
@@ -301,6 +306,28 @@ namespace ImpossibleLevels.Core
             pausePanel.gameObject.SetActive(false);
             successPanel.gameObject.SetActive(false);
             failPanel.gameObject.SetActive(false);
+        }
+
+        private void BuildFirstLevelTutorial(RectTransform root)
+        {
+            var overlay = CreateScreen("FirstLevelTutorial", root);
+            var canvasGroup = overlay.gameObject.AddComponent<CanvasGroup>();
+            canvasGroup.alpha = 0f;
+            canvasGroup.interactable = false;
+            canvasGroup.blocksRaycasts = false;
+
+            AddPanel(overlay, new Color(0.005f, 0.012f, 0.05f, 0.72f), new Vector2(0.5f, 0.69f), new Vector2(0.80f, 0.19f));
+            AddPanel(overlay, new Color(0.10f, 0.82f, 0.78f, 0.85f), new Vector2(0.5f, 0.785f), new Vector2(0.50f, 0.004f));
+            var card = AddPanel(overlay, new Color(0.06f, 0.08f, 0.16f, 0.98f), new Vector2(0.5f, 0.69f), new Vector2(0.76f, 0.16f));
+            AddTextRelative(card, LocalizationService.Get("TUTORIAL_TITLE"), new Vector2(0.5f, 0.82f), new Vector2(0.74f, 0.20f), 20, new Color(0.10f, 0.82f, 0.78f), TextAlignmentOptions.Center);
+            var message = AddTextRelative(card, LocalizationService.Get("TUTORIAL_BODY"), new Vector2(0.5f, 0.51f), new Vector2(0.58f, 0.32f), 19, Color.white, TextAlignmentOptions.Center);
+            var keyImage = AddImagePanelRelative(card, ArtAssetLibrary.GetGameplaySprite("key"), Color.white, new Vector2(0.14f, 0.52f), new Vector2(0.10f, 0.44f), true);
+            var doorImage = AddImagePanelRelative(card, ArtAssetLibrary.GetGameplaySprite("door"), Color.white, new Vector2(0.86f, 0.52f), new Vector2(0.12f, 0.52f), true);
+            AddTextRelative(card, LocalizationService.Get("TUTORIAL_KEY"), new Vector2(0.14f, 0.17f), new Vector2(0.22f, 0.18f), 12, new Color(1f, 0.78f, 0.24f), TextAlignmentOptions.Center);
+            AddTextRelative(card, LocalizationService.Get("TUTORIAL_DOOR"), new Vector2(0.86f, 0.17f), new Vector2(0.22f, 0.18f), 12, new Color(0.55f, 0.22f, 1f), TextAlignmentOptions.Center);
+
+            var controller = overlay.gameObject.AddComponent<HookIntroController>();
+            controller.ConfigureRuntime(canvasGroup, keyImage.rectTransform, doorImage.rectTransform, message);
         }
 
         private void BuildArenaPresentation()

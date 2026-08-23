@@ -14,16 +14,57 @@ namespace ImpossibleLevels.UI
         [SerializeField] private TMP_Text message;
         [SerializeField] private float duration = 3.2f;
 
+        private const string FirstLevelTutorialSeenKey = "il.tutorial.level1_seen";
+        private bool firstLevelRuntimeMode;
+
+        public static bool ShouldShowFirstLevelTutorial => PlayerPrefs.GetInt(FirstLevelTutorialSeenKey, 0) == 0;
+
+        public void ConfigureRuntime(CanvasGroup runtimeOverlay, RectTransform runtimeKeyVisual, RectTransform runtimeDoorVisual, TMP_Text runtimeMessage)
+        {
+            overlay = runtimeOverlay;
+            keyVisual = runtimeKeyVisual;
+            doorVisual = runtimeDoorVisual;
+            message = runtimeMessage;
+            firstLevelRuntimeMode = true;
+            duration = 3.2f;
+        }
+
         private IEnumerator Start()
         {
             if (overlay == null) yield break;
+            if (firstLevelRuntimeMode && !ShouldShowFirstLevelTutorial)
+            {
+                HideOverlay();
+                yield break;
+            }
+
+            if (firstLevelRuntimeMode)
+            {
+                PlayerPrefs.SetInt(FirstLevelTutorialSeenKey, 1);
+                PlayerPrefs.Save();
+            }
+
             overlay.alpha = 1f;
             if (message != null)
             {
                 message.alignment = LocalizationService.IsArabic ? TextAlignmentOptions.Right : TextAlignmentOptions.Center;
                 LocalizationService.ApplyTo(message);
-                message.text = LocalizationService.Get("HOOK_OPEN");
+                message.text = firstLevelRuntimeMode
+                    ? LocalizationService.Get("TUTORIAL_BODY")
+                    : LocalizationService.Get("HOOK_OPEN");
             }
+
+            if (firstLevelRuntimeMode)
+            {
+                yield return new WaitForSecondsRealtime(0.35f);
+                yield return Pulse(keyVisual, 0.18f);
+                yield return new WaitForSecondsRealtime(0.35f);
+                yield return Pulse(doorVisual, 0.18f);
+                yield return new WaitForSecondsRealtime(Mathf.Max(0f, duration - 0.95f));
+                yield return FadeOut();
+                yield break;
+            }
+
             yield return new WaitForSecondsRealtime(0.55f);
             if (message != null) message.text = LocalizationService.Get("HOOK_NOT_YET");
             yield return Pulse(doorVisual, 0.18f);
@@ -46,6 +87,12 @@ namespace ImpossibleLevels.UI
                 overlay.alpha = Mathf.Lerp(start, 0f, elapsed / 0.45f);
                 yield return null;
             }
+            HideOverlay();
+        }
+
+        private void HideOverlay()
+        {
+            if (overlay == null) return;
             overlay.alpha = 0f;
             overlay.blocksRaycasts = false;
             overlay.interactable = false;
