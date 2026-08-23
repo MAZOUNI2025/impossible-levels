@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using ImpossibleLevels.Levels;
 
 namespace ImpossibleLevels.UI
 {
@@ -66,7 +67,23 @@ namespace ImpossibleLevels.UI
             ["GAME_COINS_EARNED"] = "COINS EARNED  +{0}",
             ["LEVEL_LOCKED"] = "LOCKED",
             ["LEVEL_CURRENT"] = "CURRENT",
-            ["LEVEL_OBJECTIVE"] = "Find the key and open the door."
+            ["LEVEL_OBJECTIVE"] = "Find the key and open the door.",
+            ["LEVEL_IDENTITY"] = "{0}  •  {1}",
+            ["IDENTITY_TYPE_LOGIC"] = "LOGIC",
+            ["IDENTITY_TYPE_PHYSICS"] = "PHYSICS",
+            ["IDENTITY_TYPE_OBSERVATION"] = "OBSERVATION",
+            ["IDENTITY_TYPE_TIMING"] = "TIMING",
+            ["IDENTITY_TYPE_HOLD"] = "HOLD",
+            ["IDENTITY_TYPE_TRICK"] = "TRICK",
+            ["IDENTITY_TYPE_INTERACTION"] = "INTERACTION",
+            ["IDENTITY_DIFFICULTY"] = "TIER {0}",
+            ["IDENTITY_TIER_1"] = "INTRO",
+            ["IDENTITY_TIER_2"] = "WARM-UP",
+            ["IDENTITY_TIER_3"] = "TWIST",
+            ["IDENTITY_TIER_4"] = "PRESSURE",
+            ["IDENTITY_TIER_5"] = "DECEPTION",
+            ["IDENTITY_TIER_6"] = "MASTER",
+            ["IDENTITY_TIER_7"] = "FINAL"
         };
 
         private static readonly Dictionary<string, string> Arabic = new(StringComparer.Ordinal)
@@ -127,7 +144,23 @@ namespace ImpossibleLevels.UI
             ["GAME_COINS_EARNED"] = "العملات المكتسبة  +{0}",
             ["LEVEL_LOCKED"] = "مقفل",
             ["LEVEL_CURRENT"] = "الحالي",
-            ["LEVEL_OBJECTIVE"] = "اعثر على المفتاح وافتح الباب."
+            ["LEVEL_OBJECTIVE"] = "اعثر على المفتاح وافتح الباب.",
+            ["LEVEL_IDENTITY"] = "{0}  •  {1}",
+            ["IDENTITY_TYPE_LOGIC"] = "منطق",
+            ["IDENTITY_TYPE_PHYSICS"] = "فيزياء",
+            ["IDENTITY_TYPE_OBSERVATION"] = "ملاحظة",
+            ["IDENTITY_TYPE_TIMING"] = "توقيت",
+            ["IDENTITY_TYPE_HOLD"] = "ثبات",
+            ["IDENTITY_TYPE_TRICK"] = "خدعة",
+            ["IDENTITY_TYPE_INTERACTION"] = "تفاعل",
+            ["IDENTITY_DIFFICULTY"] = "الفئة {0}",
+            ["IDENTITY_TIER_1"] = "تمهيدي",
+            ["IDENTITY_TIER_2"] = "إحماء",
+            ["IDENTITY_TIER_3"] = "تحوّل",
+            ["IDENTITY_TIER_4"] = "ضغط",
+            ["IDENTITY_TIER_5"] = "خداع",
+            ["IDENTITY_TIER_6"] = "إتقان",
+            ["IDENTITY_TIER_7"] = "نهائي"
         };
 
         private static readonly string[] EnglishTitles =
@@ -216,6 +249,33 @@ namespace ImpossibleLevels.UI
         public static string Format(string key, params object[] args)
         {
             return string.Format(System.Globalization.CultureInfo.InvariantCulture, Get(key), args);
+        }
+
+        public static string GetPuzzleTypeLabel(PuzzleType type)
+        {
+            var key = type switch
+            {
+                PuzzleType.Logic => "IDENTITY_TYPE_LOGIC",
+                PuzzleType.Physics => "IDENTITY_TYPE_PHYSICS",
+                PuzzleType.Observation => "IDENTITY_TYPE_OBSERVATION",
+                PuzzleType.Timing => "IDENTITY_TYPE_TIMING",
+                PuzzleType.Hold => "IDENTITY_TYPE_HOLD",
+                PuzzleType.Trick => "IDENTITY_TYPE_TRICK",
+                PuzzleType.Interaction => "IDENTITY_TYPE_INTERACTION",
+                _ => "IDENTITY_TYPE_LOGIC"
+            };
+            return Get(key);
+        }
+
+        public static string GetDifficultyLabel(int difficulty)
+        {
+            var safeDifficulty = Mathf.Clamp(difficulty, 1, 7);
+            return Format("IDENTITY_DIFFICULTY", safeDifficulty) + "  " + Get("IDENTITY_TIER_" + safeDifficulty);
+        }
+
+        public static string GetLevelIdentity(PuzzleType type, int difficulty)
+        {
+            return Format("LEVEL_IDENTITY", GetPuzzleTypeLabel(type), GetDifficultyLabel(difficulty));
         }
 
         public static string GetLevelTitle(int index, string fallback)

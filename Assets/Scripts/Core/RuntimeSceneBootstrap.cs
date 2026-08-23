@@ -219,6 +219,7 @@ namespace ImpossibleLevels.Core
             canvas = CreateCanvas("GameplayCanvas", true);
             var root = canvas.transform as RectTransform;
             var selectedLevel = Mathf.Clamp(PlayerPrefs.GetInt("il.selected_level", 1), 1, TotalLevels);
+            var selectedEntry = LevelCatalogRuntime.All[selectedLevel - 1];
 
             var hudBar = AddPanel(root, new Color(0.035f, 0.055f, 0.14f, 0.96f), new Vector2(0.5f, 0.925f), new Vector2(1f, 0.15f));
             var levelLabel = AddTextRelative(hudBar, LocalizationService.Get("GAME_LEVEL_SHORT"), new Vector2(0.13f, 0.50f), new Vector2(0.22f, 0.62f), 26, Color.white, TextAlignmentOptions.Left);
@@ -236,7 +237,8 @@ namespace ImpossibleLevels.Core
                 new Vector2(0.92f, 0.50f), new Vector2(0.12f, 0.82f), new Color(0.13f, 0.18f, 0.34f), null);
 
             var objectivePanel = AddPanel(root, new Color(0.035f, 0.055f, 0.14f, 0.78f), new Vector2(0.5f, 0.795f), new Vector2(0.90f, 0.075f));
-            var objectiveLabel = AddTextRelative(objectivePanel, LocalizationService.Get("GAME_OBJECTIVE"), new Vector2(0.5f, 0.50f), new Vector2(0.94f, 0.70f), 20, Color.white, TextAlignmentOptions.Center);
+            AddTextRelative(objectivePanel, LocalizationService.GetLevelIdentity(selectedEntry.type, selectedEntry.difficulty), new Vector2(0.5f, 0.14f), new Vector2(0.94f, 0.22f), 12, new Color(0.10f, 0.82f, 0.78f), TextAlignmentOptions.Center);
+            var objectiveLabel = AddTextRelative(objectivePanel, LocalizationService.Get("GAME_OBJECTIVE"), new Vector2(0.5f, 0.59f), new Vector2(0.94f, 0.56f), 20, Color.white, TextAlignmentOptions.Center);
             var hintLabel = AddText(root, "", new Vector2(0.5f, 0.18f), new Vector2(0.88f, 0.055f), 19, new Color(0.10f, 0.82f, 0.78f), TextAlignmentOptions.Center);
 
             var pausePanel = AddPanel(root, new Color(0.035f, 0.055f, 0.14f, 0.98f), new Vector2(0.5f, 0.50f), new Vector2(0.72f, 0.42f));
@@ -697,16 +699,18 @@ namespace ImpossibleLevels.Core
             thumb.raycastTarget = false;
             AddTextRelative(card, entry.index.ToString("00"), new Vector2(0.13f, 0.92f), new Vector2(0.20f, 0.12f), 25, Color.white, TextAlignmentOptions.Center);
             AddLevelStars(card, earnedStars);
-            AddTextRelative(card, LocalizationService.GetLevelTitle(entry.index, entry.title), new Vector2(0.5f, 0.15f), new Vector2(0.90f, 0.16f), 16, Color.white, TextAlignmentOptions.Center);
+            AddPanelRelative(card, new Color(accent.r, accent.g, accent.b, unlocked ? 0.28f : 0.20f), new Vector2(0.5f, 0.34f), new Vector2(0.78f, 0.072f));
+            AddTextRelative(card, LocalizationService.GetLevelIdentity(entry.type, entry.difficulty), new Vector2(0.5f, 0.34f), new Vector2(0.74f, 0.064f), 11, new Color(0.88f, 0.94f, 1f), TextAlignmentOptions.Center);
+            AddTextRelative(card, LocalizationService.GetLevelTitle(entry.index, entry.title), new Vector2(0.5f, 0.12f), new Vector2(0.90f, 0.13f), 16, Color.white, TextAlignmentOptions.Center);
             if (isCurrent)
             {
-                AddPanelRelative(card, new Color(1f, 0.78f, 0.24f, 0.92f), new Vector2(0.77f, 0.27f), new Vector2(0.28f, 0.08f));
-                AddTextRelative(card, LocalizationService.Get("LEVEL_CURRENT"), new Vector2(0.77f, 0.27f), new Vector2(0.26f, 0.07f), 13, new Color(0.035f, 0.055f, 0.14f), TextAlignmentOptions.Center);
+                AddPanelRelative(card, new Color(1f, 0.78f, 0.24f, 0.92f), new Vector2(0.77f, 0.235f), new Vector2(0.28f, 0.065f));
+                AddTextRelative(card, LocalizationService.Get("LEVEL_CURRENT"), new Vector2(0.77f, 0.235f), new Vector2(0.26f, 0.058f), 12, new Color(0.035f, 0.055f, 0.14f), TextAlignmentOptions.Center);
             }
             else if (isCompleted)
             {
-                AddPanelRelative(card, new Color(0.10f, 0.82f, 0.78f, 0.84f), new Vector2(0.77f, 0.27f), new Vector2(0.30f, 0.08f));
-                AddTextRelative(card, LocalizationService.Get("LEVEL_COMPLETED"), new Vector2(0.77f, 0.27f), new Vector2(0.28f, 0.07f), 12, new Color(0.035f, 0.055f, 0.14f), TextAlignmentOptions.Center);
+                AddPanelRelative(card, new Color(0.10f, 0.82f, 0.78f, 0.84f), new Vector2(0.77f, 0.235f), new Vector2(0.30f, 0.065f));
+                AddTextRelative(card, LocalizationService.Get("LEVEL_COMPLETED"), new Vector2(0.77f, 0.235f), new Vector2(0.28f, 0.058f), 11, new Color(0.035f, 0.055f, 0.14f), TextAlignmentOptions.Center);
             }
             if (!unlocked)
             {
