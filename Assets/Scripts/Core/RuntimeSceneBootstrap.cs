@@ -109,25 +109,40 @@ namespace ImpossibleLevels.Core
         private void BuildLevelMap(RectTransform screen, LevelMapController mapController, GameObject home, GameObject map, GameObject profile, GameObject settings)
         {
             AddPanel(screen, new Color(0.035f, 0.055f, 0.14f, 0.98f), Vector2.zero, Vector2.one);
-            AddImagePanel(screen, ArtAssetLibrary.GetLevelThumbnail(Mathf.Clamp(PlayerPrefs.GetInt("il.selected_level", 1), 1, TotalLevels)), new Color(1f, 1f, 1f, 0.045f), new Vector2(0.5f, 0.53f), new Vector2(0.86f, 0.60f), true);
-            AddPanel(screen, new Color(0.10f, 0.82f, 0.78f, 0.10f), new Vector2(0.5f, 0.935f), new Vector2(0.92f, 0.12f));
-            AddText(screen, LocalizationService.Get("MAP_TITLE"), new Vector2(0.5f, 0.952f), new Vector2(0.80f, 0.055f), 40, Color.white, TextAlignmentOptions.Center);
-            AddText(screen, LocalizationService.Get("MAP_SUBTITLE"), new Vector2(0.5f, 0.895f), new Vector2(0.88f, 0.035f), 16, new Color(0.10f, 0.82f, 0.78f), TextAlignmentOptions.Center);
+            var progression = FindFirstObjectByType<ProgressionService>();
+            var currentLevel = progression != null ? Mathf.Clamp(progression.HighestUnlockedLevel, 1, TotalLevels) : 1;
+            var completedCount = 0;
+            var totalStars = 0;
+            for (var levelIndex = 1; levelIndex <= TotalLevels; levelIndex++)
+            {
+                var stars = mapController.GetLevelStars(levelIndex);
+                if (stars > 0) completedCount++;
+                totalStars += Mathf.Clamp(stars, 0, 3);
+            }
 
-            var selectedLevel = Mathf.Clamp(PlayerPrefs.GetInt("il.selected_level", 1), 1, TotalLevels);
-            var currentLabel = AddText(screen, LocalizationService.Format("MAP_CURRENT", selectedLevel), new Vector2(0.5f, 0.845f), new Vector2(0.78f, 0.035f), 17, new Color(1f, 0.78f, 0.24f), TextAlignmentOptions.Center);
+            AddImagePanel(screen, ArtAssetLibrary.GetLevelThumbnail(currentLevel), new Color(1f, 1f, 1f, 0.045f), new Vector2(0.5f, 0.50f), new Vector2(0.86f, 0.58f), true);
+            AddPanel(screen, new Color(0.10f, 0.82f, 0.78f, 0.12f), new Vector2(0.5f, 0.93f), new Vector2(0.92f, 0.15f));
+            AddText(screen, LocalizationService.Get("MAP_TITLE"), new Vector2(0.5f, 0.962f), new Vector2(0.80f, 0.050f), 40, Color.white, TextAlignmentOptions.Center);
+            AddText(screen, LocalizationService.Get("MAP_SUBTITLE"), new Vector2(0.5f, 0.918f), new Vector2(0.88f, 0.030f), 15, new Color(0.10f, 0.82f, 0.78f), TextAlignmentOptions.Center);
+
+            var progressLabel = AddText(screen, LocalizationService.Format("MAP_PROGRESS", completedCount, TotalLevels), new Vector2(0.25f, 0.862f), new Vector2(0.40f, 0.034f), 16, new Color(0.82f, 0.86f, 0.96f), TextAlignmentOptions.Center);
+            progressLabel.raycastTarget = false;
+            var starsLabel = AddText(screen, LocalizationService.Format("MAP_STARS", totalStars, TotalLevels * 3), new Vector2(0.75f, 0.862f), new Vector2(0.40f, 0.034f), 16, new Color(1f, 0.78f, 0.24f), TextAlignmentOptions.Center);
+            starsLabel.raycastTarget = false;
+            var currentLabel = AddText(screen, LocalizationService.Format("MAP_CURRENT", currentLevel), new Vector2(0.5f, 0.818f), new Vector2(0.78f, 0.034f), 17, new Color(1f, 0.78f, 0.24f), TextAlignmentOptions.Center);
             currentLabel.raycastTarget = false;
 
-            var scroll = CreateScrollView(screen, new Vector2(0.5f, 0.485f), new Vector2(0.90f, 0.67f));
+            var scroll = CreateScrollView(screen, new Vector2(0.5f, 0.445f), new Vector2(0.90f, 0.715f));
             var content = scroll.content;
+            AddProgressionPath(content, mapController);
             for (var levelIndex = 1; levelIndex <= TotalLevels; levelIndex++)
             {
                 var capturedLevel = levelIndex;
                 var entry = LevelCatalogRuntime.All[levelIndex - 1];
-                AddLevelCard(content, entry, mapController, () => mapController.SelectLevel(capturedLevel));
+                AddLevelCard(content, entry, mapController, currentLevel, () => mapController.SelectLevel(capturedLevel));
             }
 
-            AddButton(screen, LocalizationService.Get("MENU_BACK"), new Vector2(0.5f, 0.065f), new Vector2(0.32f, 0.07f), new Color(0.13f, 0.18f, 0.34f), () => ShowScreen(home, map, profile, settings));
+            AddButton(screen, LocalizationService.Get("MENU_BACK"), new Vector2(0.5f, 0.045f), new Vector2(0.32f, 0.065f), new Color(0.13f, 0.18f, 0.34f), () => ShowScreen(home, map, profile, settings));
         }
 
         private void BuildProfile(RectTransform screen, GameObject home, GameObject map, GameObject profile, GameObject settings)
@@ -559,15 +574,63 @@ namespace ImpossibleLevels.Core
             return scroll;
         }
 
-        private static void AddLevelCard(RectTransform content, RuntimeLevelEntry entry, LevelMapController mapController, UnityEngine.Events.UnityAction action)
+        private static void AddProgressionPath(RectTransform content, LevelMapController mapController)
+        {
+            var pathObject = new GameObject("ProgressionPath");
+            pathObject.transform.SetParent(content, false);
+            var pathRect = pathObject.AddComponent<RectTransform>();
+            pathRect.anchorMin = new Vector2(0f, 1f);
+            pathRect.anchorMax = new Vector2(1f, 1f);
+            pathRect.pivot = new Vector2(0.5f, 1f);
+            pathRect.anchoredPosition = Vector2.zero;
+            pathRect.sizeDelta = Vector2.zero;
+            var ignoredLayout = pathObject.AddComponent<LayoutElement>();
+            ignoredLayout.ignoreLayout = true;
+
+            const float contentHeight = 4794f;
+            const float firstRowCenter = 1f - 168f / contentHeight;
+            const float rowStep = 318f / contentHeight;
+            for (var row = 0; row < 15; row++)
+            {
+                var y = firstRowCenter - row * rowStep;
+                var horizontalTarget = row * 2 + 2;
+                AddMapConnector(pathRect, new Vector2(0.5f, y), new Vector2(0.52f, 0.008f), MapConnectorColor(mapController, horizontalTarget));
+                if (row >= 14) continue;
+                var nextY = firstRowCenter - (row + 1) * rowStep;
+                var verticalTarget = row * 2 + 3;
+                var x = row % 2 == 0 ? 0.75f : 0.25f;
+                AddMapConnector(pathRect, new Vector2(x, (y + nextY) * 0.5f), new Vector2(0.008f, rowStep), MapConnectorColor(mapController, verticalTarget));
+            }
+        }
+
+        private static Color MapConnectorColor(LevelMapController mapController, int targetLevel)
+        {
+            if (targetLevel <= TotalLevels && mapController.GetLevelStars(targetLevel) > 0)
+            {
+                return new Color(1f, 0.78f, 0.24f, 0.76f);
+            }
+            if (targetLevel <= TotalLevels && mapController.IsLevelUnlocked(targetLevel))
+            {
+                return new Color(0.10f, 0.82f, 0.78f, 0.62f);
+            }
+            return new Color(0.28f, 0.36f, 0.56f, 0.42f);
+        }
+
+        private static void AddMapConnector(RectTransform parent, Vector2 anchor, Vector2 size, Color color)
+        {
+            AddPanelRelative(parent, color, anchor, size);
+        }
+
+        private static void AddLevelCard(RectTransform content, RuntimeLevelEntry entry, LevelMapController mapController, int currentLevel, UnityEngine.Events.UnityAction action)
         {
             var cardObject = new GameObject("LevelCard_" + entry.index.ToString("00"));
             cardObject.transform.SetParent(content, false);
             var card = cardObject.AddComponent<RectTransform>();
             card.sizeDelta = new Vector2(456f, 300f);
             var unlocked = mapController.IsLevelUnlocked(entry.index);
-            var selectedLevel = Mathf.Clamp(PlayerPrefs.GetInt("il.selected_level", 1), 1, TotalLevels);
-            var isCurrent = entry.index == selectedLevel;
+            var isCurrent = entry.index == currentLevel;
+            var earnedStars = mapController.GetLevelStars(entry.index);
+            var isCompleted = earnedStars > 0;
             var cardImage = cardObject.AddComponent<Image>();
             cardImage.color = isCurrent
                 ? new Color(0.18f, 0.25f, 0.46f, 0.99f)
@@ -590,15 +653,24 @@ namespace ImpossibleLevels.Core
             var motion = cardObject.AddComponent<MotionFeedback>();
             if (unlocked) button.onClick.AddListener(motion.Press);
 
+            var thumbFrame = AddPanelRelative(card, new Color(accent.r, accent.g, accent.b, unlocked ? 0.38f : 0.22f), new Vector2(0.5f, 0.62f), new Vector2(0.94f, 0.62f));
+            var frameOutline = thumbFrame.gameObject.AddComponent<Outline>();
+            frameOutline.effectColor = new Color(0.72f, 0.86f, 1f, unlocked ? 0.42f : 0.24f);
+            frameOutline.effectDistance = new Vector2(2f, 2f);
             var thumb = AddImagePanelRelative(card, ArtAssetLibrary.GetLevelThumbnail(entry.index), unlocked ? Color.white : new Color(0.48f, 0.50f, 0.60f, 1f), new Vector2(0.5f, 0.62f), new Vector2(0.90f, 0.58f), true);
             thumb.raycastTarget = false;
             AddTextRelative(card, entry.index.ToString("00"), new Vector2(0.13f, 0.92f), new Vector2(0.20f, 0.12f), 25, Color.white, TextAlignmentOptions.Center);
-            AddLevelStars(card, mapController.GetLevelStars(entry.index));
+            AddLevelStars(card, earnedStars);
             AddTextRelative(card, LocalizationService.GetLevelTitle(entry.index, entry.title), new Vector2(0.5f, 0.15f), new Vector2(0.90f, 0.16f), 16, Color.white, TextAlignmentOptions.Center);
             if (isCurrent)
             {
                 AddPanelRelative(card, new Color(1f, 0.78f, 0.24f, 0.92f), new Vector2(0.77f, 0.27f), new Vector2(0.28f, 0.08f));
                 AddTextRelative(card, LocalizationService.Get("LEVEL_CURRENT"), new Vector2(0.77f, 0.27f), new Vector2(0.26f, 0.07f), 13, new Color(0.035f, 0.055f, 0.14f), TextAlignmentOptions.Center);
+            }
+            else if (isCompleted)
+            {
+                AddPanelRelative(card, new Color(0.10f, 0.82f, 0.78f, 0.84f), new Vector2(0.77f, 0.27f), new Vector2(0.30f, 0.08f));
+                AddTextRelative(card, LocalizationService.Get("LEVEL_COMPLETED"), new Vector2(0.77f, 0.27f), new Vector2(0.28f, 0.07f), 12, new Color(0.035f, 0.055f, 0.14f), TextAlignmentOptions.Center);
             }
             if (!unlocked)
             {
