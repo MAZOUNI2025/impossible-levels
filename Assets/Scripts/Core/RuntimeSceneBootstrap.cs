@@ -132,7 +132,7 @@ namespace ImpossibleLevels.Core
             var currentLabel = AddText(screen, LocalizationService.Format("MAP_CURRENT", currentLevel), new Vector2(0.5f, 0.818f), new Vector2(0.78f, 0.034f), 17, new Color(1f, 0.78f, 0.24f), TextAlignmentOptions.Center);
             currentLabel.raycastTarget = false;
 
-            var scroll = CreateScrollView(screen, new Vector2(0.5f, 0.445f), new Vector2(0.90f, 0.715f));
+            var scroll = CreateScrollView(screen, new Vector2(0.5f, 0.44f), new Vector2(0.90f, 0.70f));
             var content = scroll.content;
             AddProgressionPath(content, mapController);
             for (var levelIndex = 1; levelIndex <= TotalLevels; levelIndex++)
@@ -142,7 +142,7 @@ namespace ImpossibleLevels.Core
                 AddLevelCard(content, entry, mapController, currentLevel, () => mapController.SelectLevel(capturedLevel));
             }
 
-            AddButton(screen, LocalizationService.Get("MENU_BACK"), new Vector2(0.5f, 0.045f), new Vector2(0.32f, 0.065f), new Color(0.13f, 0.18f, 0.34f), () => ShowScreen(home, map, profile, settings));
+            AddButton(screen, LocalizationService.Get("MENU_BACK"), new Vector2(0.5f, 0.045f), new Vector2(0.32f, 0.072f), new Color(0.13f, 0.18f, 0.34f), () => ShowScreen(home, map, profile, settings));
         }
 
         private void BuildProfile(RectTransform screen, GameObject home, GameObject map, GameObject profile, GameObject settings)
@@ -321,9 +321,9 @@ namespace ImpossibleLevels.Core
             canvasGroup.interactable = false;
             canvasGroup.blocksRaycasts = false;
 
-            AddPanel(overlay, new Color(0.005f, 0.012f, 0.05f, 0.72f), new Vector2(0.5f, 0.69f), new Vector2(0.80f, 0.19f));
-            AddPanel(overlay, new Color(0.10f, 0.82f, 0.78f, 0.85f), new Vector2(0.5f, 0.785f), new Vector2(0.50f, 0.004f));
-            var card = AddPanel(overlay, new Color(0.06f, 0.08f, 0.16f, 0.98f), new Vector2(0.5f, 0.69f), new Vector2(0.76f, 0.16f));
+            AddPanel(overlay, new Color(0.005f, 0.012f, 0.05f, 0.72f), new Vector2(0.5f, 0.665f), new Vector2(0.80f, 0.17f));
+            AddPanel(overlay, new Color(0.10f, 0.82f, 0.78f, 0.85f), new Vector2(0.5f, 0.75f), new Vector2(0.50f, 0.004f));
+            var card = AddPanel(overlay, new Color(0.06f, 0.08f, 0.16f, 0.98f), new Vector2(0.5f, 0.665f), new Vector2(0.76f, 0.14f));
             AddTextRelative(card, LocalizationService.Get("TUTORIAL_TITLE"), new Vector2(0.5f, 0.82f), new Vector2(0.74f, 0.20f), 20, new Color(0.10f, 0.82f, 0.78f), TextAlignmentOptions.Center);
             var message = AddTextRelative(card, LocalizationService.Get("TUTORIAL_BODY"), new Vector2(0.5f, 0.51f), new Vector2(0.58f, 0.32f), 19, Color.white, TextAlignmentOptions.Center);
             var keyImage = AddImagePanelRelative(card, ArtAssetLibrary.GetGameplaySprite("key"), Color.white, new Vector2(0.14f, 0.52f), new Vector2(0.10f, 0.44f), true);
@@ -512,6 +512,7 @@ namespace ImpossibleLevels.Core
             var obj = new GameObject("Button_" + label.Replace(" ", "_"));
             obj.transform.SetParent(parent, false);
             var rect = obj.AddComponent<RectTransform>();
+            size.y = Mathf.Max(size.y, 0.055f);
             SetNormalizedRect(rect, anchor, size);
             var image = obj.AddComponent<Image>();
             image.color = color;
@@ -531,6 +532,7 @@ namespace ImpossibleLevels.Core
             var obj = new GameObject("Button_" + label.Replace(" ", "_"));
             obj.transform.SetParent(parent, false);
             var rect = obj.AddComponent<RectTransform>();
+            size.y = Mathf.Max(size.y, 0.055f);
             SetNormalizedRect(rect, anchor, size);
             var image = obj.AddComponent<Image>();
             image.color = color;
@@ -586,9 +588,10 @@ namespace ImpossibleLevels.Core
             var labelText = rect.GetComponentInChildren<TMP_Text>();
             if (labelText != null)
             {
-                labelText.rectTransform.anchorMin = new Vector2(0.06f, 0.04f);
-                labelText.rectTransform.anchorMax = new Vector2(0.94f, 0.25f);
+                labelText.rectTransform.anchorMin = new Vector2(0.04f, 0.035f);
+                labelText.rectTransform.anchorMax = new Vector2(0.96f, 0.34f);
                 labelText.rectTransform.sizeDelta = Vector2.zero;
+                labelText.margin = new Vector4(8f, 4f, 8f, 4f);
                 labelText.fontSize = Mathf.Max(17f, labelText.fontSize * 0.72f);
             }
             return button;
@@ -606,9 +609,10 @@ namespace ImpossibleLevels.Core
             var labelText = rect.GetComponentInChildren<TMP_Text>();
             if (labelText != null)
             {
-                labelText.rectTransform.anchorMin = new Vector2(0.04f, 0.04f);
-                labelText.rectTransform.anchorMax = new Vector2(0.96f, 0.25f);
+                labelText.rectTransform.anchorMin = new Vector2(0.04f, 0.035f);
+                labelText.rectTransform.anchorMax = new Vector2(0.96f, 0.34f);
                 labelText.rectTransform.sizeDelta = Vector2.zero;
+                labelText.margin = new Vector4(6f, 4f, 6f, 4f);
                 labelText.fontSize = Mathf.Max(13f, labelText.fontSize * 0.58f);
             }
             return button;
