@@ -22,7 +22,10 @@ namespace ImpossibleLevels.UI
         [SerializeField] private TMP_Text coinLabel;
         [SerializeField] private TMP_Text starsFallback;
         [SerializeField] private TMP_Text completionStatsLabel;
+        [SerializeField] private TMP_Text completionBestStarsLabel;
         [SerializeField] private TMP_Text completionCoinsLabel;
+        [SerializeField] private TMP_Text completionTotalCoinsLabel;
+        [SerializeField] private TMP_Text completionProgressLabel;
 
         [Header("Star Visuals")]
         [SerializeField] private Image[] starVisuals;
@@ -35,6 +38,11 @@ namespace ImpossibleLevels.UI
 
         [Header("Runtime")]
         [SerializeField] private LevelRuntime levelRuntime;
+
+        private ProceduralPuzzleBoard puzzleBoard;
+        private bool hasCurrentRunSummary;
+        private int currentRunStars;
+        private int currentRunReward;
 
         private CanvasGroup pauseCanvasGroup;
         private CanvasGroup successCanvasGroup;
@@ -51,7 +59,8 @@ namespace ImpossibleLevels.UI
         public void Configure(LevelRuntime runtime, GameObject pause, GameObject success, GameObject fail,
             TMP_Text objective, TMP_Text level, TMP_Text hint, TMP_Text coins,
             Button pauseControl, Button retryControl, Button continueControl, Button hintControl,
-            Image[] stars, TMP_Text starFallback, TMP_Text completionStats, TMP_Text completionCoins)
+            Image[] stars, TMP_Text starFallback, TMP_Text completionStats, TMP_Text completionBestStars,
+            TMP_Text completionCoins, TMP_Text completionTotalCoins, TMP_Text completionProgress)
         {
             levelRuntime = runtime;
             pausePanel = pause;
@@ -68,9 +77,13 @@ namespace ImpossibleLevels.UI
             starVisuals = stars;
             starsFallback = starFallback;
             completionStatsLabel = completionStats;
+            completionBestStarsLabel = completionBestStars;
             completionCoinsLabel = completionCoins;
+            completionTotalCoinsLabel = completionTotalCoins;
+            completionProgressLabel = completionProgress;
             BindButtonListeners();
             BindRuntimeEvents();
+            BindPuzzleBoardEvents();
         }
 
         private void Awake()
@@ -82,6 +95,7 @@ namespace ImpossibleLevels.UI
         {
             if (levelRuntime == null) levelRuntime = FindFirstObjectByType<LevelRuntime>();
             BindRuntimeEvents();
+            BindPuzzleBoardEvents();
             SetPanelImmediate(pausePanel, ref pauseCanvasGroup, false);
             SetPanelImmediate(successPanel, ref successCanvasGroup, false);
             SetPanelImmediate(failPanel, ref failCanvasGroup, false);
@@ -92,6 +106,7 @@ namespace ImpossibleLevels.UI
         private void OnDisable()
         {
             if (levelRuntime != null) levelRuntime.StateChanged -= OnStateChanged;
+            if (puzzleBoard != null) puzzleBoard.CompletionSummaryReady -= OnCompletionSummaryReady;
             StopFeedbackCoroutines();
         }
 
@@ -188,6 +203,22 @@ namespace ImpossibleLevels.UI
             levelRuntime.StateChanged += OnStateChanged;
         }
 
+        private void BindPuzzleBoardEvents()
+        {
+            if (puzzleBoard == null) puzzleBoard = FindFirstObjectByType<ProceduralPuzzleBoard>();
+            if (puzzleBoard == null) return;
+            puzzleBoard.CompletionSummaryReady -= OnCompletionSummaryReady;
+            puzzleBoard.CompletionSummaryReady += OnCompletionSummaryReady;
+        }
+
+        private void OnCompletionSummaryReady(int levelIndex, int stars, int reward)
+        {
+            if (levelRuntime != null && levelIndex != levelRuntime.LevelIndex) return;
+            hasCurrentRunSummary = true;
+            currentRunStars = Mathf.Clamp(stars, 0, 3);
+            currentRunReward = Mathf.Max(0, reward);
+        }
+
         private static void BindButton(Button button, UnityEngine.Events.UnityAction action)
         {
             if (button == null) return;
@@ -239,17 +270,39 @@ namespace ImpossibleLevels.UI
 
         private void UpdateCompletionSummary()
         {
-            var stars = 0;
-            var reward = 0;
-            if (levelRuntime != null)
-            {
-                var progression = FindFirstObjectByType<ProgressionService>();
-                if (progression != null) stars = progression.GetStars(levelRuntime.LevelIndex);
-                reward = levelRuntime.CalculateCoinReward(stars);
-            }
+            var progression = FindFirstObjectByType<ProgressionService>();
+            var profile = FindFirstObjectByType<PlayerProfileService>();
+            if (profile != null) profile.RefreshTotals(30);
+            var bestStars = 0;
+            if (progression != null && levelRuntime != null) bestStars = Mathf.Clamp(progression.GetStars(levelRuntime.LevelIndex), 0, 3);
 
-            if (completionStatsLabel != null) completionStatsLabel.text = LocalizationService.Format("GAME_STARS_EARNED", stars);
-            if (completionCoinsLabel != null) completionCoinsLabel.text = LocalizationService.Format("GAME_COINS_EARNED", reward);
+            if (completionStatsLabel != null)
+            {
+                completionStatsLabel.text = hasCurrentRunSummary
+                    ? LocalizationService.Format("GAME_STARS_THIS_RUN", currentRunStars)
+                    : LocalizationService.Get("GAME_STARS_THIS_RUN_UNAVAILABLE");
+            }
+            if (completionBestStarsLabel != null)
+            {
+                completionBestStarsLabel.text = LocalizationService.Format("GAME_BEST_STARS", bestStars);
+            }
+            if (completionCoinsLabel != null)
+            {
+                completionCoinsLabel.text = hasCurrentRunSummary
+                    ? LocalizationService.Format("GAME_COINS_THIS_COMPLETION", currentRunReward)
+                    : LocalizationService.Get("GAME_COINS_THIS_COMPLETION_UNAVAILABLE");
+            }
+            if (completionTotalCoinsLabel != null)
+            {
+                var totalCoins = progression != null ? progression.Coins : 0;
+                completionTotalCoinsLabel.text = LocalizationService.Format("GAME_COINS_TOTAL", totalCoins);
+            }
+            if (completionProgressLabel != null)
+            {
+                var completed = profile != null ? profile.CompletedLevels : 0;
+                var totalStars = profile != null ? profile.TotalStars : 0;
+                completionProgressLabel.text = LocalizationService.Format("GAME_PROGRESS_SUMMARY", completed, 30, totalStars, 90);
+            }
             RefreshStars();
             RefreshCoinsFromProgression();
         }

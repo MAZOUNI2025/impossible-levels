@@ -1,4 +1,5 @@
 using System.Collections;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using ImpossibleLevels.Audio;
@@ -24,6 +25,9 @@ namespace ImpossibleLevels.Levels
         private PuzzleNode draggedNode;
         private float startedAt;
         private int hintCount;
+
+        // Presentation-only notification; gameplay and progression remain authoritative below.
+        public event Action<int, int, int> CompletionSummaryReady;
 
         private static readonly Color Navy = new(0.035f, 0.055f, 0.14f);
         private static readonly Color Amber = new(1f, 0.63f, 0.08f);
@@ -188,6 +192,7 @@ namespace ImpossibleLevels.Levels
             var progression = FindFirstObjectByType<ProgressionService>();
             var reward = runtime != null ? runtime.CalculateCoinReward(stars) : 10 + stars * 2;
             if (progression != null) progression.CompleteLevel(levelIndex, stars, reward);
+            CompletionSummaryReady?.Invoke(levelIndex, stars, reward);
             if (AudioDirector.Instance != null)
             {
                 AudioDirector.Instance.DoorUnlock();

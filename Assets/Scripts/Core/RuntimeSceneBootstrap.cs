@@ -154,6 +154,7 @@ namespace ImpossibleLevels.Core
 
             var progression = FindFirstObjectByType<ProgressionService>();
             var profileService = FindFirstObjectByType<PlayerProfileService>();
+            if (profileService != null) profileService.RefreshTotals(TotalLevels);
             var completed = profileService != null ? profileService.CompletedLevels : 0;
             var stars = profileService != null ? profileService.TotalStars : 0;
             var coins = progression != null ? progression.Coins : 0;
@@ -167,9 +168,9 @@ namespace ImpossibleLevels.Core
             }
             AddText(screen, LocalizationService.Format("PROFILE_COMPLETED", completed), new Vector2(0.5f, 0.45f), new Vector2(0.75f, 0.055f), 25, Color.white, TextAlignmentOptions.Center);
             AddImagePanel(screen, ArtAssetLibrary.GetGameplaySprite("star_filled"), Color.white, new Vector2(0.30f, 0.36f), new Vector2(0.065f, 0.052f), true);
-            AddText(screen, stars + " / 90", new Vector2(0.45f, 0.36f), new Vector2(0.26f, 0.055f), 25, new Color(1f, 0.78f, 0.24f), TextAlignmentOptions.Left);
-            AddImagePanel(screen, ArtAssetLibrary.GetGameplaySprite("coin"), Color.white, new Vector2(0.58f, 0.36f), new Vector2(0.065f, 0.052f), true);
-            AddText(screen, coins.ToString(), new Vector2(0.72f, 0.36f), new Vector2(0.20f, 0.055f), 25, new Color(1f, 0.63f, 0.08f), TextAlignmentOptions.Left);
+            AddText(screen, LocalizationService.Format("PROFILE_STARS_LABEL", stars, TotalLevels * 3), new Vector2(0.38f, 0.36f), new Vector2(0.36f, 0.055f), 21, new Color(1f, 0.78f, 0.24f), TextAlignmentOptions.Left);
+            AddImagePanel(screen, ArtAssetLibrary.GetGameplaySprite("coin"), Color.white, new Vector2(0.62f, 0.36f), new Vector2(0.065f, 0.052f), true);
+            AddText(screen, LocalizationService.Format("PROFILE_COINS_LABEL", coins), new Vector2(0.73f, 0.36f), new Vector2(0.25f, 0.055f), 21, new Color(1f, 0.63f, 0.08f), TextAlignmentOptions.Left);
             AddText(screen, LocalizationService.Get("PROFILE_HINT"), new Vector2(0.5f, 0.26f), new Vector2(0.86f, 0.05f), 18, new Color(0.72f, 0.78f, 0.92f), TextAlignmentOptions.Center);
             AddButton(screen, LocalizationService.Get("MENU_BACK"), new Vector2(0.5f, 0.10f), new Vector2(0.32f, 0.07f), new Color(0.13f, 0.18f, 0.34f), () => ShowScreen(home, map, profile, settings));
         }
@@ -244,12 +245,18 @@ namespace ImpossibleLevels.Core
             var pausePanel = AddPanel(root, new Color(0.035f, 0.055f, 0.14f, 0.98f), new Vector2(0.5f, 0.50f), new Vector2(0.72f, 0.42f));
             AddImagePanelRelative(pausePanel, ArtAssetLibrary.GetGameplaySprite("pause"), Color.white, new Vector2(0.20f, 0.70f), new Vector2(0.10f, 0.16f), true);
             AddTextRelative(pausePanel, LocalizationService.Get("GAME_PAUSE"), new Vector2(0.56f, 0.68f), new Vector2(0.70f, 0.18f), 42, Color.white, TextAlignmentOptions.Left);
-            var successPanel = AddPanel(root, new Color(0.035f, 0.055f, 0.14f, 0.98f), new Vector2(0.5f, 0.50f), new Vector2(0.82f, 0.52f));
-            AddTextRelative(successPanel, LocalizationService.Get("GAME_COMPLETE"), new Vector2(0.5f, 0.78f), new Vector2(0.90f, 0.14f), 34, new Color(0.10f, 0.82f, 0.78f), TextAlignmentOptions.Center);
-            AddImagePanelRelative(successPanel, ArtAssetLibrary.GetGameplaySprite("star_filled"), Color.white, new Vector2(0.20f, 0.60f), new Vector2(0.10f, 0.12f), true);
-            var completionStatsLabel = AddTextRelative(successPanel, LocalizationService.Format("GAME_STARS_EARNED", 0), new Vector2(0.58f, 0.60f), new Vector2(0.58f, 0.08f), 23, new Color(1f, 0.78f, 0.24f), TextAlignmentOptions.Left);
-            AddImagePanelRelative(successPanel, ArtAssetLibrary.GetGameplaySprite("coin"), Color.white, new Vector2(0.20f, 0.50f), new Vector2(0.10f, 0.12f), true);
-            var completionCoinsLabel = AddTextRelative(successPanel, LocalizationService.Format("GAME_COINS_EARNED", 0), new Vector2(0.58f, 0.50f), new Vector2(0.58f, 0.08f), 22, new Color(1f, 0.63f, 0.08f), TextAlignmentOptions.Left);
+            var successPanel = AddPanel(root, new Color(0.035f, 0.055f, 0.14f, 0.98f), new Vector2(0.5f, 0.50f), new Vector2(0.84f, 0.64f));
+            AddTextRelative(successPanel, LocalizationService.Get("GAME_COMPLETE"), new Vector2(0.5f, 0.90f), new Vector2(0.90f, 0.10f), 34, new Color(0.10f, 0.82f, 0.78f), TextAlignmentOptions.Center);
+            AddPanelRelative(successPanel, new Color(0.08f, 0.10f, 0.19f, 0.92f), new Vector2(0.5f, 0.62f), new Vector2(0.88f, 0.43f));
+            AddImagePanelRelative(successPanel, ArtAssetLibrary.GetGameplaySprite("star_filled"), Color.white, new Vector2(0.15f, 0.78f), new Vector2(0.08f, 0.10f), true);
+            var completionStatsLabel = AddTextRelative(successPanel, LocalizationService.Get("GAME_STARS_THIS_RUN_UNAVAILABLE"), new Vector2(0.56f, 0.78f), new Vector2(0.68f, 0.09f), 21, new Color(1f, 0.78f, 0.24f), TextAlignmentOptions.Left);
+            AddImagePanelRelative(successPanel, ArtAssetLibrary.GetGameplaySprite("star_empty"), Color.white, new Vector2(0.15f, 0.67f), new Vector2(0.08f, 0.10f), true);
+            var completionBestStarsLabel = AddTextRelative(successPanel, LocalizationService.Format("GAME_BEST_STARS", 0), new Vector2(0.56f, 0.67f), new Vector2(0.68f, 0.09f), 21, new Color(0.82f, 0.86f, 0.96f), TextAlignmentOptions.Left);
+            AddImagePanelRelative(successPanel, ArtAssetLibrary.GetGameplaySprite("coin"), Color.white, new Vector2(0.15f, 0.56f), new Vector2(0.08f, 0.10f), true);
+            var completionCoinsLabel = AddTextRelative(successPanel, LocalizationService.Get("GAME_COINS_THIS_COMPLETION_UNAVAILABLE"), new Vector2(0.56f, 0.56f), new Vector2(0.68f, 0.09f), 20, new Color(1f, 0.63f, 0.08f), TextAlignmentOptions.Left);
+            AddImagePanelRelative(successPanel, ArtAssetLibrary.GetGameplaySprite("coin"), new Color(1f, 1f, 1f, 0.72f), new Vector2(0.15f, 0.45f), new Vector2(0.08f, 0.10f), true);
+            var completionTotalCoinsLabel = AddTextRelative(successPanel, LocalizationService.Format("GAME_COINS_TOTAL", 0), new Vector2(0.56f, 0.45f), new Vector2(0.68f, 0.09f), 20, new Color(1f, 0.78f, 0.24f), TextAlignmentOptions.Left);
+            var completionProgressLabel = AddTextRelative(successPanel, LocalizationService.Format("GAME_PROGRESS_SUMMARY", 0, TotalLevels, 0, TotalLevels * 3), new Vector2(0.5f, 0.34f), new Vector2(0.84f, 0.08f), 15, new Color(0.10f, 0.82f, 0.78f), TextAlignmentOptions.Center);
             var failPanel = AddPanel(root, new Color(0.035f, 0.055f, 0.14f, 0.98f), new Vector2(0.5f, 0.50f), new Vector2(0.78f, 0.42f));
             AddTextRelative(failPanel, LocalizationService.Get("GAME_FAILED"), new Vector2(0.5f, 0.72f), new Vector2(0.90f, 0.16f), 34, new Color(1f, 0.63f, 0.08f), TextAlignmentOptions.Center);
 
@@ -258,10 +265,10 @@ namespace ImpossibleLevels.Core
             var hintButton = AddIconButton(root, LocalizationService.Get("GAME_HINT_BUTTON"), "hint", new Vector2(0.5f, 0.085f), new Vector2(0.32f, 0.095f), new Color(0.55f, 0.22f, 1f), board.UseHint);
 
             var router = gameObject.AddComponent<LevelCompletionRouter>();
-            AddButtonRelative(successPanel, LocalizationService.Get("GAME_NEXT"), new Vector2(0.5f, 0.30f), new Vector2(0.68f, 0.14f), new Color(1f, 0.63f, 0.08f), router.LoadNextLevel);
-            AddButtonRelative(successPanel, LocalizationService.Get("GAME_REPLAY"), new Vector2(0.30f, 0.16f), new Vector2(0.28f, 0.12f), new Color(0.10f, 0.82f, 0.78f), router.ReplayLevel);
-            AddButtonRelative(successPanel, LocalizationService.Get("GAME_LEVEL_MAP"), new Vector2(0.70f, 0.16f), new Vector2(0.34f, 0.12f), new Color(0.55f, 0.22f, 1f), router.ReturnToLevelMap);
-            AddButtonRelative(successPanel, LocalizationService.Get("GAME_MENU"), new Vector2(0.5f, 0.06f), new Vector2(0.42f, 0.08f), new Color(0.13f, 0.18f, 0.34f), router.ReturnToMenu);
+            AddButtonRelative(successPanel, LocalizationService.Get("GAME_NEXT"), new Vector2(0.5f, 0.23f), new Vector2(0.68f, 0.10f), new Color(1f, 0.63f, 0.08f), router.LoadNextLevel);
+            AddButtonRelative(successPanel, LocalizationService.Get("GAME_REPLAY"), new Vector2(0.30f, 0.115f), new Vector2(0.28f, 0.09f), new Color(0.10f, 0.82f, 0.78f), router.ReplayLevel);
+            AddButtonRelative(successPanel, LocalizationService.Get("GAME_LEVEL_MAP"), new Vector2(0.70f, 0.115f), new Vector2(0.34f, 0.09f), new Color(0.55f, 0.22f, 1f), router.ReturnToLevelMap);
+            AddButtonRelative(successPanel, LocalizationService.Get("GAME_MENU"), new Vector2(0.5f, 0.035f), new Vector2(0.42f, 0.045f), new Color(0.13f, 0.18f, 0.34f), router.ReturnToMenu);
             AddButtonRelative(pausePanel, LocalizationService.Get("GAME_RESUME"), new Vector2(0.5f, 0.45f), new Vector2(0.60f, 0.16f), new Color(0.10f, 0.82f, 0.78f), runtime.TogglePause);
             AddButtonRelative(pausePanel, LocalizationService.Get("GAME_RESTART"), new Vector2(0.5f, 0.26f), new Vector2(0.60f, 0.14f), new Color(1f, 0.63f, 0.08f), router.ReplayLevel);
             AddButtonRelative(pausePanel, LocalizationService.Get("GAME_SETTINGS"), new Vector2(0.30f, 0.08f), new Vector2(0.28f, 0.12f), new Color(0.55f, 0.22f, 1f), router.OpenSettings);
@@ -269,7 +276,8 @@ namespace ImpossibleLevels.Core
 
             var hud = gameObject.AddComponent<GameHudController>();
             hud.Configure(runtime, pausePanel.gameObject, successPanel.gameObject, failPanel.gameObject, objectiveLabel, levelLabel, hintLabel, coinLabel,
-                pauseButton, retryButton, continueButton, hintButton, starVisuals, starsFallback, completionStatsLabel, completionCoinsLabel);
+                pauseButton, retryButton, continueButton, hintButton, starVisuals, starsFallback, completionStatsLabel, completionBestStarsLabel,
+                completionCoinsLabel, completionTotalCoinsLabel, completionProgressLabel);
             var entry = LevelCatalogRuntime.All[selectedLevel - 1];
             hud.SetObjective(entry.objective, selectedLevel);
             hud.SetLevelHint(entry.hint);
