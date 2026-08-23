@@ -360,8 +360,9 @@ namespace ImpossibleLevels.UI
             {
                 elapsed += Time.unscaledDeltaTime;
                 var t = Mathf.Clamp01(elapsed / 0.16f);
-                group.alpha = t;
-                rect.localScale = Vector3.LerpUnclamped(Vector3.one * 0.95f, Vector3.one, t);
+                var eased = t * t * (3f - 2f * t);
+                group.alpha = eased;
+                rect.localScale = Vector3.LerpUnclamped(Vector3.one * 0.95f, Vector3.one, eased);
                 yield return null;
             }
             group.alpha = 1f;
