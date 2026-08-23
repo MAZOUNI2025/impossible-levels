@@ -214,6 +214,7 @@ namespace ImpossibleLevels.Core
             levelRootObject.transform.SetParent(transform, false);
             var board = gameObject.AddComponent<ProceduralPuzzleBoard>();
             board.Configure(runtime, levelRootObject.transform, gameplayCamera);
+            BuildArenaPresentation();
 
             canvas = CreateCanvas("GameplayCanvas", true);
             var root = canvas.transform as RectTransform;
@@ -275,6 +276,41 @@ namespace ImpossibleLevels.Core
             pausePanel.gameObject.SetActive(false);
             successPanel.gameObject.SetActive(false);
             failPanel.gameObject.SetActive(false);
+        }
+
+        private void BuildArenaPresentation()
+        {
+            var arenaObject = new GameObject("ArenaPresentation");
+            arenaObject.transform.SetParent(transform, false);
+
+            // Presentation-only depth layers. Gameplay nodes remain owned by ProceduralPuzzleBoard.
+            AddArenaSprite(arenaObject.transform, "ArenaBackdrop", "floor", new Vector2(0f, -0.55f),
+                new Vector2(8.35f, 12.10f), new Color(1f, 1f, 1f, 0.16f), -12, 0f);
+            AddArenaSprite(arenaObject.transform, "ArenaLeftRail", "toprail", new Vector2(-4.00f, -0.55f),
+                new Vector2(0.24f, 11.15f), new Color(0.10f, 0.82f, 0.78f, 0.42f), -11, 90f);
+            AddArenaSprite(arenaObject.transform, "ArenaRightRail", "toprail", new Vector2(4.00f, -0.55f),
+                new Vector2(0.24f, 11.15f), new Color(0.55f, 0.22f, 1f, 0.34f), -11, 90f);
+            AddArenaSprite(arenaObject.transform, "ArenaTopAccent", "toprail", new Vector2(0f, 5.28f),
+                new Vector2(7.55f, 0.20f), new Color(0.10f, 0.82f, 0.78f, 0.26f), -10, 0f);
+            AddArenaSprite(arenaObject.transform, "ArenaBottomAccent", "floor", new Vector2(0f, -6.12f),
+                new Vector2(7.70f, 0.24f), new Color(1f, 0.63f, 0.08f, 0.34f), -10, 0f);
+        }
+
+        private static void AddArenaSprite(Transform parent, string name, string assetName, Vector2 position,
+            Vector2 scale, Color tint, int sortingOrder, float rotation)
+        {
+            var sprite = ArtAssetLibrary.GetGameplaySprite(assetName);
+            if (sprite == null) return;
+
+            var objectInstance = new GameObject(name);
+            objectInstance.transform.SetParent(parent, false);
+            objectInstance.transform.position = new Vector3(position.x, position.y, 1f);
+            objectInstance.transform.localScale = new Vector3(scale.x, scale.y, 1f);
+            objectInstance.transform.rotation = Quaternion.Euler(0f, 0f, rotation);
+            var renderer = objectInstance.AddComponent<SpriteRenderer>();
+            renderer.sprite = sprite;
+            renderer.color = tint;
+            renderer.sortingOrder = sortingOrder;
         }
 
         private Canvas CreateCanvas(string name, bool applySafeArea = false)
