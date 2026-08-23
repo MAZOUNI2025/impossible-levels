@@ -272,7 +272,8 @@ namespace ImpossibleLevels.UI
         {
             var progression = FindFirstObjectByType<ProgressionService>();
             var profile = FindFirstObjectByType<PlayerProfileService>();
-            if (profile != null) profile.RefreshTotals(30);
+            var totalLevels = LevelCatalogRuntime.All == null ? 0 : LevelCatalogRuntime.All.Count;
+            if (profile != null) profile.RefreshTotals(totalLevels);
             var bestStars = 0;
             if (progression != null && levelRuntime != null) bestStars = Mathf.Clamp(progression.GetStars(levelRuntime.LevelIndex), 0, 3);
 
@@ -301,7 +302,7 @@ namespace ImpossibleLevels.UI
             {
                 var completed = profile != null ? profile.CompletedLevels : 0;
                 var totalStars = profile != null ? profile.TotalStars : 0;
-                completionProgressLabel.text = LocalizationService.Format("GAME_PROGRESS_SUMMARY", completed, 30, totalStars, 90);
+                completionProgressLabel.text = LocalizationService.Format("GAME_PROGRESS_SUMMARY", completed, totalLevels, totalStars, totalLevels * 3);
             }
             RefreshStars();
             RefreshCoinsFromProgression();

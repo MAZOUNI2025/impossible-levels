@@ -45,6 +45,7 @@ namespace ImpossibleLevels.UI
             ["SETTINGS_RESET_BUTTON"] = "RESET",
             ["SETTINGS_PROGRESS"] = "PROGRESS",
             ["SETTINGS_VERSION"] = "VERSION {0}",
+            ["SETTINGS_STATE"] = "{0}  {1}",
             ["SETTINGS_ON"] = "ON",
             ["SETTINGS_OFF"] = "OFF",
             ["SETTINGS_ENGLISH"] = "ENGLISH",
@@ -136,6 +137,7 @@ namespace ImpossibleLevels.UI
             ["SETTINGS_RESET_BUTTON"] = "إعادة الضبط",
             ["SETTINGS_PROGRESS"] = "التقدم",
             ["SETTINGS_VERSION"] = "الإصدار {0}",
+            ["SETTINGS_STATE"] = "{0}  {1}",
             ["SETTINGS_ON"] = "تشغيل",
             ["SETTINGS_OFF"] = "إيقاف",
             ["SETTINGS_ENGLISH"] = "English",
@@ -298,7 +300,7 @@ namespace ImpossibleLevels.UI
         public static string GetDifficultyLabel(int difficulty)
         {
             var safeDifficulty = Mathf.Clamp(difficulty, 1, 7);
-            return Format("IDENTITY_DIFFICULTY", safeDifficulty) + "  " + Get("IDENTITY_TIER_" + safeDifficulty);
+            return Format("LEVEL_IDENTITY", Format("IDENTITY_DIFFICULTY", safeDifficulty), Get("IDENTITY_TIER_" + safeDifficulty));
         }
 
         public static string GetLevelIdentity(PuzzleType type, int difficulty)
