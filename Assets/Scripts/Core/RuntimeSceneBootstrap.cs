@@ -341,8 +341,8 @@ namespace ImpossibleLevels.Core
             arenaObject.transform.SetParent(transform, false);
 
             // Presentation-only depth layers. Gameplay nodes remain owned by ProceduralPuzzleBoard.
-            AddArenaSprite(arenaObject.transform, "ArenaBackdrop", "floor", new Vector2(0f, -0.55f),
-                new Vector2(8.35f, 12.10f), new Color(1f, 1f, 1f, 0.16f), -12, 0f);
+            AddArenaSprite(arenaObject.transform, "ArenaBackdrop", "background", new Vector2(0f, -0.55f),
+                new Vector2(8.35f, 12.10f), new Color(1f, 1f, 1f, 0.92f), -12, 0f);
             AddArenaSprite(arenaObject.transform, "ArenaLeftRail", "toprail", new Vector2(-4.00f, -0.55f),
                 new Vector2(0.24f, 11.15f), new Color(0.10f, 0.82f, 0.78f, 0.42f), -11, 90f);
             AddArenaSprite(arenaObject.transform, "ArenaRightRail", "toprail", new Vector2(4.00f, -0.55f),
