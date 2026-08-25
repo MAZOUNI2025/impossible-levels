@@ -17,6 +17,7 @@ namespace ImpossibleLevels.Core
 
         private void Awake()
         {
+            ConfigureMobileRuntime();
             EnsureGameServices();
             EnsureCamera();
             EnsureEventSystem();
@@ -28,6 +29,17 @@ namespace ImpossibleLevels.Core
                 if (sceneName == "Gameplay") AudioDirector.Instance.PlayGameplayMusic();
                 else AudioDirector.Instance.PlayMenuMusic();
             }
+        }
+
+        private static void ConfigureMobileRuntime()
+        {
+            if (!Application.isMobilePlatform) return;
+
+            Screen.orientation = ScreenOrientation.Portrait;
+            Screen.autorotateToPortrait = false;
+            Screen.autorotateToPortraitUpsideDown = false;
+            Screen.autorotateToLandscapeLeft = false;
+            Screen.autorotateToLandscapeRight = false;
         }
 
         private void EnsureGameServices()

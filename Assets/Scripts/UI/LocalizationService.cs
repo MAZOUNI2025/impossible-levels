@@ -367,10 +367,10 @@ namespace ImpossibleLevels.UI
         {
             if (text == null) return;
             text.isRightToLeftText = IsArabic;
-            if (IsArabic)
+            if (IsArabic && text.alignment == TextAlignmentOptions.Left)
             {
-                if (text.alignment == TextAlignmentOptions.Left) text.alignment = TextAlignmentOptions.Right;
-                else if (text.alignment == TextAlignmentOptions.Right) text.alignment = TextAlignmentOptions.Left;
+                // ApplyTo may be called more than once; never toggle an already RTL-aligned label.
+                text.alignment = TextAlignmentOptions.Right;
             }
         }
     }

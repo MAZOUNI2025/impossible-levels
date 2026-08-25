@@ -15,6 +15,11 @@ namespace ImpossibleLevels.UI
             ApplySafeArea();
         }
 
+        private void OnEnable()
+        {
+            ApplySafeArea();
+        }
+
         private void Update()
         {
             if (lastSafeArea != Screen.safeArea || lastScreenSize.x != Screen.width || lastScreenSize.y != Screen.height)
