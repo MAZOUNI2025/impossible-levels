@@ -87,6 +87,15 @@ namespace ImpossibleLevels.Core
             title.characterSpacing = 2.5f;
             AddText(mainScreen, LocalizationService.Get("MENU_TAGLINE"), new Vector2(0.5f, 0.755f), new Vector2(0.86f, 0.045f), 24, new Color(0.10f, 0.82f, 0.78f), TextAlignmentOptions.Center);
             AddText(mainScreen, LocalizationService.Get("MENU_SUBTITLE"), new Vector2(0.5f, 0.705f), new Vector2(0.88f, 0.04f), 17, new Color(0.82f, 0.86f, 0.96f), TextAlignmentOptions.Center);
+            var menuProgression = FindFirstObjectByType<ProgressionService>();
+            var menuCompleted = 0;
+            for (var levelIndex = 1; levelIndex <= TotalLevels; levelIndex++)
+            {
+                if (menuProgression != null && menuProgression.GetLevelStars(levelIndex) > 0) menuCompleted++;
+            }
+            var menuCoins = menuProgression != null ? Mathf.Max(0, menuProgression.Coins) : 0;
+            AddStatusBadge(mainScreen, LocalizationService.Format("MAP_PROGRESS", menuCompleted, TotalLevels), ArtAssetLibrary.GetGameplaySprite("star_filled"), new Vector2(0.28f, 0.94f), new Vector2(0.38f, 0.052f), new Color(0.10f, 0.82f, 0.78f));
+            AddStatusBadge(mainScreen, LocalizationService.Format("PROFILE_COINS_LABEL", menuCoins), ArtAssetLibrary.GetGameplaySprite("coin"), new Vector2(0.72f, 0.94f), new Vector2(0.32f, 0.052f), new Color(1f, 0.63f, 0.08f));
 
             var menu = gameObject.AddComponent<MainMenuController>();
             AddMenuIconButton(mainScreen, LocalizationService.Get("MENU_PLAY"), "play", new Vector2(0.5f, 0.535f), new Vector2(0.44f, 0.145f), new Color(1f, 0.63f, 0.08f), menu.StartFirstLevel, true);
@@ -111,6 +120,7 @@ namespace ImpossibleLevels.Core
             AddPanel(screen, new Color(0.035f, 0.055f, 0.14f, 0.98f), Vector2.zero, Vector2.one);
             var progression = FindFirstObjectByType<ProgressionService>();
             var currentLevel = progression != null ? Mathf.Clamp(progression.HighestUnlockedLevel, 1, TotalLevels) : 1;
+            var currentEntry = LevelCatalogRuntime.All[currentLevel - 1];
             var completedCount = 0;
             var totalStars = 0;
             for (var levelIndex = 1; levelIndex <= TotalLevels; levelIndex++)
@@ -131,8 +141,18 @@ namespace ImpossibleLevels.Core
             starsLabel.raycastTarget = false;
             var currentLabel = AddText(screen, LocalizationService.Format("MAP_CURRENT", currentLevel), new Vector2(0.5f, 0.818f), new Vector2(0.78f, 0.034f), 17, new Color(1f, 0.78f, 0.24f), TextAlignmentOptions.Center);
             currentLabel.raycastTarget = false;
+            var preview = AddPanel(screen, new Color(0.06f, 0.08f, 0.16f, 0.96f), new Vector2(0.5f, 0.735f), new Vector2(0.82f, 0.105f));
+            var previewOutline = preview.gameObject.AddComponent<Outline>();
+            previewOutline.effectColor = new Color(0.10f, 0.82f, 0.78f, 0.42f);
+            previewOutline.effectDistance = new Vector2(2f, 2f);
+            var previewImage = AddImagePanelRelative(preview, ArtAssetLibrary.GetLevelThumbnail(currentLevel), Color.white, new Vector2(0.13f, 0.50f), new Vector2(0.18f, 0.82f), true);
+            previewImage.raycastTarget = false;
+            var previewTitle = AddTextRelative(preview, LocalizationService.GetLevelTitle(currentLevel, currentEntry.title), new Vector2(0.59f, 0.67f), new Vector2(0.68f, 0.38f), 17, Color.white, TextAlignmentOptions.Center);
+            previewTitle.raycastTarget = false;
+            var previewObjective = AddTextRelative(preview, LocalizationService.GetLevelObjective(currentLevel, currentEntry.objective), new Vector2(0.59f, 0.28f), new Vector2(0.68f, 0.30f), 12, new Color(0.72f, 0.78f, 0.92f), TextAlignmentOptions.Center);
+            previewObjective.raycastTarget = false;
 
-            var scroll = CreateScrollView(screen, new Vector2(0.5f, 0.44f), new Vector2(0.90f, 0.70f));
+            var scroll = CreateScrollView(screen, new Vector2(0.5f, 0.39f), new Vector2(0.90f, 0.63f));
             var content = scroll.content;
             AddProgressionPath(content, mapController);
             for (var levelIndex = 1; levelIndex <= TotalLevels; levelIndex++)
@@ -173,6 +193,9 @@ namespace ImpossibleLevels.Core
             AddText(screen, LocalizationService.Format("PROFILE_COMPLETED", completed), new Vector2(0.27f, 0.57f), new Vector2(0.40f, 0.055f), 21, Color.white, TextAlignmentOptions.Center);
             AddText(screen, LocalizationService.Format("PROFILE_TOTAL_LEVELS", totalLevels), new Vector2(0.73f, 0.57f), new Vector2(0.40f, 0.055f), 21, Color.white, TextAlignmentOptions.Center);
             AddText(screen, LocalizationService.Format("PROFILE_COMPLETION_PERCENT", percentage), new Vector2(0.5f, 0.49f), new Vector2(0.78f, 0.05f), 23, new Color(1f, 0.78f, 0.24f), TextAlignmentOptions.Center);
+            var profileUnlocked = progression != null ? Mathf.Clamp(progression.HighestUnlockedLevel, 1, totalLevels) : 1;
+            AddStatusBadge(screen, LocalizationService.Format("MAP_CURRENT", profileUnlocked), ArtAssetLibrary.GetUiIcon("levels"), new Vector2(0.27f, 0.78f), new Vector2(0.34f, 0.052f), new Color(0.10f, 0.82f, 0.78f));
+            AddStatusBadge(screen, LocalizationService.Format("PROFILE_COINS_LABEL", coins), ArtAssetLibrary.GetGameplaySprite("coin"), new Vector2(0.73f, 0.78f), new Vector2(0.32f, 0.052f), new Color(1f, 0.63f, 0.08f));
             AddImagePanel(screen, ArtAssetLibrary.GetGameplaySprite("star_filled"), Color.white, new Vector2(0.29f, 0.39f), new Vector2(0.060f, 0.050f), true);
             AddText(screen, LocalizationService.Format("PROFILE_STARS_LABEL", stars, totalLevels * 3), new Vector2(0.43f, 0.39f), new Vector2(0.30f, 0.05f), 19, new Color(1f, 0.78f, 0.24f), TextAlignmentOptions.Center);
             AddImagePanel(screen, ArtAssetLibrary.GetGameplaySprite("coin"), Color.white, new Vector2(0.64f, 0.39f), new Vector2(0.060f, 0.050f), true);
@@ -794,6 +817,21 @@ namespace ImpossibleLevels.Core
                     new Vector2(0.62f + i * 0.075f, 0.92f), new Vector2(0.060f, 0.115f), true);
                 star.raycastTarget = false;
             }
+        }
+
+        private static void AddStatusBadge(RectTransform parent, string label, Sprite icon, Vector2 anchor, Vector2 size, Color accent)
+        {
+            var badge = AddPanel(parent, new Color(0.035f, 0.055f, 0.14f, 0.94f), anchor, size);
+            var outline = badge.gameObject.AddComponent<Outline>();
+            outline.effectColor = new Color(accent.r, accent.g, accent.b, 0.62f);
+            outline.effectDistance = new Vector2(2f, 2f);
+            if (icon != null)
+            {
+                var iconImage = AddImagePanelRelative(badge, icon, Color.white, new Vector2(0.16f, 0.50f), new Vector2(0.18f, 0.72f), true);
+                iconImage.raycastTarget = false;
+            }
+            var text = AddTextRelative(badge, label, new Vector2(0.59f, 0.50f), new Vector2(0.70f, 0.72f), 13, Color.white, TextAlignmentOptions.Center);
+            text.raycastTarget = false;
         }
 
         private static void SetNormalizedRect(RectTransform rect, Vector2 center, Vector2 size)
