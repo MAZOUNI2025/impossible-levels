@@ -20,11 +20,11 @@ namespace ImpossibleLevels.Levels
     {
         public static IReadOnlyList<RuntimeLevelEntry> All { get; } = new List<RuntimeLevelEntry>
         {
-            Entry(1, "The Key Is Right There", PuzzleType.Interaction, 1, "Open the door.", "Notice the object that changes the goal."),
-            Entry(2, "Drag the Wrong Box", PuzzleType.Interaction, 1, "Reveal the real target.", "The smallest object may matter most."),
-            Entry(3, "One Button", PuzzleType.Logic, 1, "Activate the button.", "The first result is not the final state."),
-            Entry(4, "The Quiet Switch", PuzzleType.Observation, 1, "Find the hidden switch.", "Look at the room edges."),
-            Entry(5, "Do Not Touch the Door", PuzzleType.Trick, 2, "Reach the goal without the door.", "The goal label can be misleading."),
+            Entry(1, "The Key Is Right There", PuzzleType.Interaction, 1, "Collect the key, then open the door.", "Tap the key first, then tap the door."),
+            Entry(2, "Drag the Wrong Box", PuzzleType.Interaction, 1, "Place the block in the socket, then open the door.", "Drag the block into the matching socket."),
+            Entry(3, "One Button", PuzzleType.Logic, 1, "Turn on the switch, collect the key, then open the door.", "Turn the switch on before trying the door."),
+            Entry(4, "The Quiet Switch", PuzzleType.Observation, 1, "Reveal the hidden key, collect it, then open the door.", "Inspect the reveal trigger to show what the room hides."),
+            Entry(5, "Do Not Touch the Door", PuzzleType.Trick, 2, "Collect the key, complete the sequence, then open the door.", "Tap the three markers in the demonstrated order."),
             Entry(6, "Falling Up", PuzzleType.Physics, 2, "Reach the exit.", "Watch the direction of movement."),
             Entry(7, "The Fake Exit", PuzzleType.Observation, 2, "Find the real exit.", "Check which object has a collider."),
             Entry(8, "Three Seconds", PuzzleType.Timing, 2, "Hold until the ring completes.", "A short press is not enough."),

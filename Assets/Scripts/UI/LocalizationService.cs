@@ -227,7 +227,7 @@ namespace ImpossibleLevels.UI
 
         private static readonly string[] EnglishObjectives =
         {
-            "Open the door.", "Reveal the real target.", "Activate the button.", "Find the hidden switch.", "Reach the goal without the door.",
+            "Collect the key, then open the door.", "Place the block in the socket, then open the door.", "Turn on the switch, collect the key, then open the door.", "Reveal the hidden key, collect it, then open the door.", "Collect the key, complete the sequence, then open the door.",
             "Reach the exit.", "Find the real exit.", "Hold until the ring completes.", "Activate the pressure plate.", "Reveal the hidden control.",
             "Tap during the safe phase.", "Open the matching door.", "Pull the lever fully.", "Roll the ball to the goal.", "Cross the missing section.",
             "Disable the alarm.", "Activate both plates.", "Find the mismatch.", "Keep the character still.", "Complete the three-state switch.",
@@ -237,7 +237,7 @@ namespace ImpossibleLevels.UI
 
         private static readonly string[] ArabicObjectives =
         {
-            "افتح الباب.", "اكشف الهدف الحقيقي.", "فعّل الزر.", "اعثر على المفتاح المخفي.", "بلغ الهدف دون استخدام الباب.",
+            "اجمع المفتاح، ثم افتح الباب.", "ضع الكتلة في المكان المطابق، ثم افتح الباب.", "فعّل المفتاح، ثم اجمع المفتاح وافتح الباب.", "اكشف المفتاح المخفي، ثم اجمعه وافتح الباب.", "اجمع المفتاح، وأكمل الترتيب، ثم افتح الباب.",
             "بلغ المخرج.", "اعثر على المخرج الحقيقي.", "استمر حتى تكتمل الدائرة.", "فعّل لوحة الضغط.", "اكشف أداة التحكم المخفية.",
             "انقر أثناء المرحلة الآمنة.", "افتح الباب المطابق.", "اسحب الرافعة بالكامل.", "دحرج الكرة إلى الهدف.", "اعبر الجزء المفقود.",
             "عطّل الإنذار.", "فعّل اللوحتين.", "اعثر على الاختلاف.", "أبقِ الشخصية ساكنة.", "أكمل المفتاح ذي الحالات الثلاث.",
@@ -247,7 +247,7 @@ namespace ImpossibleLevels.UI
 
         private static readonly string[] EnglishHints =
         {
-            "Notice the object that changes the goal.", "The smallest object may matter most.", "The first result is not the final state.", "Look at the room edges.", "The goal label can be misleading.",
+            "Tap the key first, then tap the door.", "Drag the block into the matching socket.", "Turn the switch on before trying the door.", "Inspect the reveal trigger to show what the room hides.", "Tap the three markers in the demonstrated order.",
             "Watch the direction of movement.", "Check which object has a collider.", "A short press is not enough.", "The key is not meant to be dragged.", "UI can hide part of the puzzle.",
             "Color is a timing signal.", "Compare symbols, not colors.", "Keep dragging after the first click.", "Use momentum rather than precision.", "The scenery is interactive.",
             "Find what is moving.", "The direct path is a trap.", "Look for the object that breaks symmetry.", "Sometimes no movement is the solution.", "Count the state changes.",
@@ -257,7 +257,7 @@ namespace ImpossibleLevels.UI
 
         private static readonly string[] ArabicHints =
         {
-            "لاحظ الشيء الذي يغيّر الهدف.", "قد يكون أصغر عنصر هو الأهم.", "النتيجة الأولى ليست الحالة النهائية.", "انظر إلى حواف الغرفة.", "قد يكون اسم الهدف مضللًا.",
+            "اضغط على المفتاح أولًا، ثم اضغط على الباب.", "اسحب الكتلة إلى المكان المطابق.", "فعّل المفتاح قبل محاولة فتح الباب.", "افحص محفّز الكشف لإظهار ما تخفيه الغرفة.", "اضغط على العلامات الثلاث بالترتيب الموضح.",
             "راقب اتجاه الحركة.", "تحقق من الجسم الذي يملك مصادمًا.", "الضغط القصير لا يكفي.", "المفتاح ليس مخصصًا للسحب.", "قد تخفي الواجهة جزءًا من اللغز.",
             "اللون إشارة للتوقيت.", "قارن الرموز لا الألوان.", "واصل السحب بعد النقرة الأولى.", "استخدم الزخم بدل الدقة.", "المشهد قابل للتفاعل.",
             "اعثر على الشيء المتحرك.", "المسار المباشر فخ.", "ابحث عن العنصر الذي يكسر التماثل.", "أحيانًا يكون عدم الحركة هو الحل.", "عدّ تغيّرات الحالة.",
