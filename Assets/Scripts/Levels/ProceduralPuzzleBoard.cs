@@ -240,9 +240,9 @@ namespace ImpossibleLevels.Levels
             CreateBlock("TopRail", new Vector2(0f, 5.35f), new Vector2(7.4f, 0.25f), Slate, -1);
             CreatePlayerVisual(new Vector2(-2.65f, -3.85f), new Vector2(0.95f, 1.15f));
 
-            var variation = (mechanicConfig.deterministicSeed % 6 + 6) % 6;
-            var keyPosition = new Vector2(-2.25f + (variation % 3) * 0.45f, 1.0f - (variation / 3) * 1.2f);
-            var doorPosition = new Vector2(2.25f, -3.5f + (variation % 2) * 0.75f);
+            var variation = (mechanicConfig.deterministicSeed % 8 + 8) % 8;
+            var keyPosition = new Vector2(-2.4f + (variation % 4) * 1.2f, 1.35f - (variation / 4) * 1.35f);
+            var doorPosition = new Vector2(2.45f, -3.7f + (variation % 2) * 0.9f);
             var keyIsVisible = mechanicConfig.rule != GameplayRule.RevealObservation;
             var key = CreateNode("Key", keyPosition, new Vector2(0.78f, 0.78f), Amber, NodeKind.Key, false);
             hiddenKeyNode = keyIsVisible ? null : key;
@@ -253,15 +253,20 @@ namespace ImpossibleLevels.Levels
             switch (mechanicConfig.rule)
             {
                 case GameplayRule.DragPlace:
-                    blockTargetPosition = new Vector2(0f, -1f);
+                    var targetX = -1.4f + (mechanicConfig.variationIndex % 3) * 1.4f;
+                    var targetY = -1.45f + (mechanicConfig.variationIndex % 2) * 1.1f;
+                    blockTargetPosition = new Vector2(targetX, targetY);
                     CreateNode("BlockTarget", blockTargetPosition, new Vector2(1.35f, 0.95f), Disabled, NodeKind.BlockTarget, false, false);
-                    CreateNode("MovableBlock", new Vector2(-0.6f, -2.3f), new Vector2(1.2f, 0.8f), Slate, NodeKind.Block, true);
+                    var blockStart = new Vector2(targetX > 0f ? -2.5f : 2.0f, targetY + 1.35f);
+                    CreateNode("MovableBlock", blockStart, new Vector2(1.2f, 0.8f), Slate, NodeKind.Block, true);
                     break;
                 case GameplayRule.SwitchState:
-                    switchNode = CreateNode("Switch", new Vector2(0f, 3.0f), new Vector2(1.1f, 0.35f), Teal, NodeKind.Switch, false);
+                    var switchX = -1.8f + (mechanicConfig.variationIndex % 4) * 1.2f;
+                    switchNode = CreateNode("Switch", new Vector2(switchX, 2.65f), new Vector2(1.1f, 0.35f), Teal, NodeKind.Switch, false);
                     break;
                 case GameplayRule.RevealObservation:
-                    CreateNode("RevealTrigger", new Vector2(0f, 3.0f), new Vector2(1.1f, 0.65f), Teal, NodeKind.RevealTrigger, false);
+                    var revealX = mechanicConfig.deterministicSeed % 2 == 0 ? -1.8f : 1.8f;
+                    CreateNode("RevealTrigger", new Vector2(revealX, 2.65f), new Vector2(1.1f, 0.65f), Teal, NodeKind.RevealTrigger, false);
                     break;
                 case GameplayRule.FairSequence:
                     CreateSequenceNodes();
@@ -274,18 +279,19 @@ namespace ImpossibleLevels.Levels
 
         private void CreateSequenceNodes()
         {
-            var sequenceLength = Mathf.Clamp(mechanicConfig.sequenceLength, 1, 3);
+            var sequenceLength = Mathf.Clamp(mechanicConfig.sequenceLength, 1, 5);
+            var direction = mechanicConfig.deterministicSeed % 2 == 0 ? 1f : -1f;
+            var startX = sequenceLength == 5 ? -2.6f : -1.9f;
             for (var i = 0; i < sequenceLength; i++)
             {
-                var position = new Vector2(-1.4f + i * 1.4f, 3.0f);
+                var position = new Vector2(startX + direction * i * 1.3f, 3.0f - (mechanicConfig.variationIndex % 2) * 0.55f);
                 sequenceNodes.Add(CreateNode("SequenceStep_" + (i + 1), position, new Vector2(0.72f, 0.72f), Teal, NodeKind.SequenceStep, false, true, i));
             }
         }
 
         private void CreateLegacyDecorations(int index)
         {
-            if (index < 7) return;
-            var decoyCount = 1 + Mathf.Min(4, (index - 1) / 6);
+            var decoyCount = mechanicConfig != null ? mechanicConfig.decoyCount : Mathf.Min(3, Mathf.Max(0, (index - 1) / 5));
             for (var i = 0; i < decoyCount; i++)
             {
                 var x = -2.3f + (i % 3) * 2.0f;

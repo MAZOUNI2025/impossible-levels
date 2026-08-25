@@ -26,35 +26,37 @@ namespace ImpossibleLevels.Levels
         public int difficulty;
         public string tutorialCue;
         public int sequenceLength;
+        public int contentTier;
+        public int variationIndex;
+        public int decoyCount;
 
         public static LevelMechanicConfig ForEntry(int index, PuzzleType type, int difficulty, string objective, string hint)
         {
-            var rule = index switch
-            {
-                2 => GameplayRule.DragPlace,
-                3 => GameplayRule.SwitchState,
-                4 => GameplayRule.RevealObservation,
-                5 => GameplayRule.FairSequence,
-                _ => GameplayRule.KeyDoor
-            };
+            var safeIndex = Math.Max(1, index);
+            var band = (safeIndex - 1) / 5;
+            var slot = (safeIndex - 1) % 5;
+            var rule = (GameplayRule)slot;
+            var sequenceLength = rule == GameplayRule.FairSequence ? 2 + Math.Min(3, band) : 0;
+            var decoyCount = Math.Min(3, band);
 
-            var config = new LevelMechanicConfig
+            return new LevelMechanicConfig
             {
-                levelId = index,
+                levelId = safeIndex,
                 catalogType = type,
                 catalogObjective = objective,
                 rule = rule,
-                deterministicSeed = 7919 * index + 17,
+                deterministicSeed = 7919 * safeIndex + 17,
                 objects = ObjectsFor(rule),
                 goal = GoalFor(rule),
                 failCondition = FailFor(rule),
                 hint = hint,
-                difficulty = difficulty,
+                difficulty = Math.Max(1, difficulty),
                 tutorialCue = TutorialFor(rule),
-                sequenceLength = rule == GameplayRule.FairSequence ? 3 : 0
+                sequenceLength = sequenceLength,
+                contentTier = band + 1,
+                variationIndex = band,
+                decoyCount = decoyCount
             };
-
-            return config;
         }
 
         private static string[] ObjectsFor(GameplayRule rule)
@@ -100,7 +102,7 @@ namespace ImpossibleLevels.Levels
                 GameplayRule.DragPlace => "Drag the block into the matching socket.",
                 GameplayRule.SwitchState => "Turn the switch on before trying the door.",
                 GameplayRule.RevealObservation => "Inspect the reveal trigger to show what the room hides.",
-                GameplayRule.FairSequence => "Tap the three sequence markers in the demonstrated order.",
+                GameplayRule.FairSequence => "Tap the sequence markers in the demonstrated order.",
                 _ => "Tap the key, then tap the door."
             };
         }

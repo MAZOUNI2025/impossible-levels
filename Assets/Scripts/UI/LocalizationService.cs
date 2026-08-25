@@ -227,42 +227,42 @@ namespace ImpossibleLevels.UI
 
         private static readonly string[] EnglishObjectives =
         {
-            "Collect the key, then open the door.", "Place the block in the socket, then open the door.", "Turn on the switch, collect the key, then open the door.", "Reveal the hidden key, collect it, then open the door.", "Collect the key, complete the sequence, then open the door.",
-            "Reach the exit.", "Find the real exit.", "Hold until the ring completes.", "Activate the pressure plate.", "Reveal the hidden control.",
-            "Tap during the safe phase.", "Open the matching door.", "Pull the lever fully.", "Roll the ball to the goal.", "Cross the missing section.",
-            "Disable the alarm.", "Activate both plates.", "Find the mismatch.", "Keep the character still.", "Complete the three-state switch.",
-            "Catch the key.", "Tap the true target.", "Unlock the hint path.", "Tap the corners in order.", "Wait for the true opening.",
-            "Recreate the pattern.", "Move the box around the obstacle.", "Reach the door.", "Reveal the second state.", "Open the final door."
+            "Collect the key, then open the door.", "Place the block in the socket, then open the door.", "Collect the key, turn on the switch, then open the door.", "Reveal the hidden key, collect it, then open the door.", "Collect the key, complete the sequence, then open the door.",
+            "Collect the key, then open the door.", "Place the block in the socket, then open the door.", "Collect the key, turn on the switch, then open the door.", "Reveal the hidden key, collect it, then open the door.", "Collect the key, complete the sequence, then open the door.",
+            "Collect the key, then open the door.", "Place the block in the socket, then open the door.", "Collect the key, turn on the switch, then open the door.", "Reveal the hidden key, collect it, then open the door.", "Collect the key, complete the sequence, then open the door.",
+            "Collect the key, then open the door.", "Place the block in the socket, then open the door.", "Collect the key, turn on the switch, then open the door.", "Reveal the hidden key, collect it, then open the door.", "Collect the key, complete the sequence, then open the door.",
+            "Collect the key, then open the door.", "Place the block in the socket, then open the door.", "Collect the key, turn on the switch, then open the door.", "Reveal the hidden key, collect it, then open the door.", "Collect the key, complete the sequence, then open the door.",
+            "Collect the key, then open the door.", "Place the block in the socket, then open the door.", "Collect the key, turn on the switch, then open the door.", "Reveal the hidden key, collect it, then open the door.", "Collect the key, complete the sequence, then open the door."
         };
 
         private static readonly string[] ArabicObjectives =
         {
-            "اجمع المفتاح، ثم افتح الباب.", "ضع الكتلة في المكان المطابق، ثم افتح الباب.", "فعّل المفتاح، ثم اجمع المفتاح وافتح الباب.", "اكشف المفتاح المخفي، ثم اجمعه وافتح الباب.", "اجمع المفتاح، وأكمل الترتيب، ثم افتح الباب.",
-            "بلغ المخرج.", "اعثر على المخرج الحقيقي.", "استمر حتى تكتمل الدائرة.", "فعّل لوحة الضغط.", "اكشف أداة التحكم المخفية.",
-            "انقر أثناء المرحلة الآمنة.", "افتح الباب المطابق.", "اسحب الرافعة بالكامل.", "دحرج الكرة إلى الهدف.", "اعبر الجزء المفقود.",
-            "عطّل الإنذار.", "فعّل اللوحتين.", "اعثر على الاختلاف.", "أبقِ الشخصية ساكنة.", "أكمل المفتاح ذي الحالات الثلاث.",
-            "أمسك بالمفتاح.", "انقر على الهدف الحقيقي.", "افتح مسار التلميح.", "انقر على الزوايا بالترتيب.", "انتظر الفتح الحقيقي.",
-            "أعد تشكيل النمط.", "حرّك الصندوق حول العائق.", "بلغ الباب.", "اكشف الحالة الثانية.", "افتح الباب الأخير."
+            "اجمع المفتاح، ثم افتح الباب.", "ضع الكتلة في المكان المطابق، ثم افتح الباب.", "اجمع المفتاح، فعّل المفتاح، ثم افتح الباب.", "اكشف المفتاح المخفي، ثم اجمعه وافتح الباب.", "اجمع المفتاح، وأكمل الترتيب، ثم افتح الباب.",
+            "اجمع المفتاح، ثم افتح الباب.", "ضع الكتلة في المكان المطابق، ثم افتح الباب.", "اجمع المفتاح، فعّل المفتاح، ثم افتح الباب.", "اكشف المفتاح المخفي، ثم اجمعه وافتح الباب.", "اجمع المفتاح، وأكمل الترتيب، ثم افتح الباب.",
+            "اجمع المفتاح، ثم افتح الباب.", "ضع الكتلة في المكان المطابق، ثم افتح الباب.", "اجمع المفتاح، فعّل المفتاح، ثم افتح الباب.", "اكشف المفتاح المخفي، ثم اجمعه وافتح الباب.", "اجمع المفتاح، وأكمل الترتيب، ثم افتح الباب.",
+            "اجمع المفتاح، ثم افتح الباب.", "ضع الكتلة في المكان المطابق، ثم افتح الباب.", "اجمع المفتاح، فعّل المفتاح، ثم افتح الباب.", "اكشف المفتاح المخفي، ثم اجمعه وافتح الباب.", "اجمع المفتاح، وأكمل الترتيب، ثم افتح الباب.",
+            "اجمع المفتاح، ثم افتح الباب.", "ضع الكتلة في المكان المطابق، ثم افتح الباب.", "اجمع المفتاح، فعّل المفتاح، ثم افتح الباب.", "اكشف المفتاح المخفي، ثم اجمعه وافتح الباب.", "اجمع المفتاح، وأكمل الترتيب، ثم افتح الباب.",
+            "اجمع المفتاح، ثم افتح الباب.", "ضع الكتلة في المكان المطابق، ثم افتح الباب.", "اجمع المفتاح، فعّل المفتاح، ثم افتح الباب.", "اكشف المفتاح المخفي، ثم اجمعه وافتح الباب.", "اجمع المفتاح، وأكمل الترتيب، ثم افتح الباب."
         };
 
         private static readonly string[] EnglishHints =
         {
             "Tap the key first, then tap the door.", "Drag the block into the matching socket.", "Turn the switch on before trying the door.", "Inspect the reveal trigger to show what the room hides.", "Tap the three markers in the demonstrated order.",
-            "Watch the direction of movement.", "Check which object has a collider.", "A short press is not enough.", "The key is not meant to be dragged.", "UI can hide part of the puzzle.",
-            "Color is a timing signal.", "Compare symbols, not colors.", "Keep dragging after the first click.", "Use momentum rather than precision.", "The scenery is interactive.",
-            "Find what is moving.", "The direct path is a trap.", "Look for the object that breaks symmetry.", "Sometimes no movement is the solution.", "Count the state changes.",
-            "Release is the action.", "Shadows can reveal the real target.", "The hint is part of the puzzle.", "Order is hidden in the environment.", "Do not retry immediately.",
-            "Symmetry is the instruction.", "Plan the complete path.", "The reward is a distraction.", "Retry can change the puzzle.", "Combine what the world taught you."
+            "Tap the key first, then tap the door.", "Drag the block into the matching socket.", "Turn the switch on before trying the door.", "Inspect the reveal trigger to show what the room hides.", "Tap the three markers in the demonstrated order.",
+            "Tap the key first, then tap the door.", "Drag the block into the matching socket.", "Turn the switch on before trying the door.", "Inspect the reveal trigger to show what the room hides.", "Tap the three markers in the demonstrated order.",
+            "Tap the key first, then tap the door.", "Drag the block into the matching socket.", "Turn the switch on before trying the door.", "Inspect the reveal trigger to show what the room hides.", "Tap the three markers in the demonstrated order.",
+            "Tap the key first, then tap the door.", "Drag the block into the matching socket.", "Turn the switch on before trying the door.", "Inspect the reveal trigger to show what the room hides.", "Tap the three markers in the demonstrated order.",
+            "Tap the key first, then tap the door.", "Drag the block into the matching socket.", "Turn the switch on before trying the door.", "Inspect the reveal trigger to show what the room hides.", "Tap the three markers in the demonstrated order."
         };
 
         private static readonly string[] ArabicHints =
         {
             "اضغط على المفتاح أولًا، ثم اضغط على الباب.", "اسحب الكتلة إلى المكان المطابق.", "فعّل المفتاح قبل محاولة فتح الباب.", "افحص محفّز الكشف لإظهار ما تخفيه الغرفة.", "اضغط على العلامات الثلاث بالترتيب الموضح.",
-            "راقب اتجاه الحركة.", "تحقق من الجسم الذي يملك مصادمًا.", "الضغط القصير لا يكفي.", "المفتاح ليس مخصصًا للسحب.", "قد تخفي الواجهة جزءًا من اللغز.",
-            "اللون إشارة للتوقيت.", "قارن الرموز لا الألوان.", "واصل السحب بعد النقرة الأولى.", "استخدم الزخم بدل الدقة.", "المشهد قابل للتفاعل.",
-            "اعثر على الشيء المتحرك.", "المسار المباشر فخ.", "ابحث عن العنصر الذي يكسر التماثل.", "أحيانًا يكون عدم الحركة هو الحل.", "عدّ تغيّرات الحالة.",
-            "الإفلات هو الفعل المطلوب.", "قد تكشف الظلال الهدف الحقيقي.", "التلميح جزء من اللغز.", "الترتيب مخفي في البيئة.", "لا تعد المحاولة فورًا.",
-            "التماثل هو التعليمات.", "خطط للمسار كاملًا.", "المكافأة مجرد تشتيت.", "قد تغيّر إعادة المحاولة اللغز.", "اجمع ما علّمك العالم إياه."
+            "اضغط على المفتاح أولًا، ثم اضغط على الباب.", "اسحب الكتلة إلى المكان المطابق.", "فعّل المفتاح قبل محاولة فتح الباب.", "افحص محفّز الكشف لإظهار ما تخفيه الغرفة.", "اضغط على العلامات الثلاث بالترتيب الموضح.",
+            "اضغط على المفتاح أولًا، ثم اضغط على الباب.", "اسحب الكتلة إلى المكان المطابق.", "فعّل المفتاح قبل محاولة فتح الباب.", "افحص محفّز الكشف لإظهار ما تخفيه الغرفة.", "اضغط على العلامات الثلاث بالترتيب الموضح.",
+            "اضغط على المفتاح أولًا، ثم اضغط على الباب.", "اسحب الكتلة إلى المكان المطابق.", "فعّل المفتاح قبل محاولة فتح الباب.", "افحص محفّز الكشف لإظهار ما تخفيه الغرفة.", "اضغط على العلامات الثلاث بالترتيب الموضح.",
+            "اضغط على المفتاح أولًا، ثم اضغط على الباب.", "اسحب الكتلة إلى المكان المطابق.", "فعّل المفتاح قبل محاولة فتح الباب.", "افحص محفّز الكشف لإظهار ما تخفيه الغرفة.", "اضغط على العلامات الثلاث بالترتيب الموضح.",
+            "اضغط على المفتاح أولًا، ثم اضغط على الباب.", "اسحب الكتلة إلى المكان المطابق.", "فعّل المفتاح قبل محاولة فتح الباب.", "افحص محفّز الكشف لإظهار ما تخفيه الغرفة.", "اضغط على العلامات الثلاث بالترتيب الموضح."
         };
 
         public static string CurrentLanguage
