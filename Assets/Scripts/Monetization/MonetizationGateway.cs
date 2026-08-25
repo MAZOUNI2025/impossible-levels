@@ -12,6 +12,7 @@ namespace ImpossibleLevels.Monetization
 
     public interface IMonetizationGateway
     {
+        bool IsConfigured { get; }
         bool IsAdsRemoved { get; }
         bool IsRewardedAdReady { get; }
         void ShowRewarded(RewardType rewardType, Action<bool> completed);
@@ -20,18 +21,20 @@ namespace ImpossibleLevels.Monetization
 
     public sealed class OfflineMonetizationGateway : MonoBehaviour, IMonetizationGateway
     {
-        public bool IsAdsRemoved => PlayerPrefs.GetInt("il.ads_removed", 0) == 1;
+        // This fallback is deliberately fail-closed until a verified provider adapter is installed.
+        public bool IsConfigured => false;
+        public bool IsAdsRemoved => false;
         public bool IsRewardedAdReady => false;
 
         public void ShowRewarded(RewardType rewardType, Action<bool> completed)
         {
-            // Development-safe fallback. A production adapter can be added later
-            // without changing level or UI code.
+            // No ad SDK is present. Never grant a reward without a verified ad callback.
             completed?.Invoke(false);
         }
 
         public void PurchaseRemoveAds(Action<bool> completed)
         {
+            // No Play Billing provider is present. Never mark a purchase locally.
             completed?.Invoke(false);
         }
     }

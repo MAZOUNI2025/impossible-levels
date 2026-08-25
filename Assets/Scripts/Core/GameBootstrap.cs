@@ -1,5 +1,6 @@
 using UnityEngine;
 using ImpossibleLevels.Audio;
+using ImpossibleLevels.Monetization;
 
 namespace ImpossibleLevels.Core
 {
@@ -48,6 +49,13 @@ namespace ImpossibleLevels.Core
                 var audioObject = new GameObject("AudioDirector");
                 audioObject.AddComponent<AudioDirector>();
                 DontDestroyOnLoad(audioObject);
+            }
+
+            if (FindFirstObjectByType<OfflineMonetizationGateway>() == null)
+            {
+                var monetizationObject = new GameObject("OfflineMonetizationGateway");
+                monetizationObject.AddComponent<OfflineMonetizationGateway>();
+                DontDestroyOnLoad(monetizationObject);
             }
         }
     }
