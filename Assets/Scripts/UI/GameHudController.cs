@@ -51,6 +51,8 @@ namespace ImpossibleLevels.UI
         private Coroutine successTransition;
         private Coroutine failTransition;
         private Coroutine starsReveal;
+        private Coroutine successCelebration;
+        private Coroutine failureFeedback;
         private Coroutine coinPulse;
         private Coroutine hintPulse;
         private int lastDisplayedCoins = -1;
@@ -151,7 +153,12 @@ namespace ImpossibleLevels.UI
 
         private void OnStateChanged(LevelState state)
         {
-            if (state == LevelState.Paused) ShowPanel(pausePanel, ref pauseCanvasGroup, ref pauseTransition);
+            if (state == LevelState.Paused)
+            {
+                if (AudioDirector.Instance != null) AudioDirector.Instance.Pause();
+                HapticsFeedback.TryPulse();
+                ShowPanel(pausePanel, ref pauseCanvasGroup, ref pauseTransition);
+            }
             else HidePanel(pausePanel, ref pauseCanvasGroup, ref pauseTransition);
 
             if (state == LevelState.Completed)
@@ -159,11 +166,26 @@ namespace ImpossibleLevels.UI
                 UpdateCompletionSummary();
                 ShowPanel(successPanel, ref successCanvasGroup, ref successTransition);
                 RevealStars();
+                StartSuccessCelebration();
             }
-            else HidePanel(successPanel, ref successCanvasGroup, ref successTransition);
+            else
+            {
+                StopRoutine(ref successCelebration);
+                HidePanel(successPanel, ref successCanvasGroup, ref successTransition);
+            }
 
-            if (state == LevelState.Failed) ShowPanel(failPanel, ref failCanvasGroup, ref failTransition);
-            else HidePanel(failPanel, ref failCanvasGroup, ref failTransition);
+            if (state == LevelState.Failed)
+            {
+                if (AudioDirector.Instance != null) AudioDirector.Instance.Failure();
+                HapticsFeedback.TryPulse();
+                ShowPanel(failPanel, ref failCanvasGroup, ref failTransition);
+                StartFailureFeedback();
+            }
+            else
+            {
+                StopRoutine(ref failureFeedback);
+                HidePanel(failPanel, ref failCanvasGroup, ref failTransition);
+            }
         }
 
         private void OnPausePressed()
@@ -358,14 +380,10 @@ namespace ImpossibleLevels.UI
 
         private void HidePanel(GameObject panel, ref CanvasGroup group, ref Coroutine routine)
         {
-            if (panel == null) return;
+            if (panel == null || !panel.activeSelf) return;
+            EnsureCanvasGroup(panel, ref group);
             if (routine != null) StopCoroutine(routine);
-            routine = null;
-            if (group == null) EnsureCanvasGroup(panel, ref group);
-            group.alpha = 1f;
-            var rect = panel.transform as RectTransform;
-            if (rect != null) rect.localScale = Vector3.one;
-            panel.SetActive(false);
+            routine = StartCoroutine(PanelOutRoutine(panel.transform as RectTransform, group, panel));
         }
 
         private IEnumerator PanelInRoutine(RectTransform rect, CanvasGroup group)
@@ -385,6 +403,75 @@ namespace ImpossibleLevels.UI
             }
             group.alpha = 1f;
             rect.localScale = Vector3.one;
+        }
+
+        private IEnumerator PanelOutRoutine(RectTransform rect, CanvasGroup group, GameObject panel)
+        {
+            if (rect == null || group == null)
+            {
+                if (panel != null) panel.SetActive(false);
+                yield break;
+            }
+
+            var startScale = rect.localScale;
+            var elapsed = 0f;
+            while (elapsed < 0.12f)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                var t = Mathf.Clamp01(elapsed / 0.12f);
+                var eased = t * t * (3f - 2f * t);
+                group.alpha = 1f - eased;
+                rect.localScale = Vector3.LerpUnclamped(startScale, Vector3.one * 0.98f, eased);
+                yield return null;
+            }
+            group.alpha = 0f;
+            rect.localScale = Vector3.one;
+            if (panel != null) panel.SetActive(false);
+        }
+
+        private void StartSuccessCelebration()
+        {
+            StopRoutine(ref successCelebration);
+            successCelebration = StartCoroutine(SuccessCelebrationRoutine());
+        }
+
+        private IEnumerator SuccessCelebrationRoutine()
+        {
+            var rect = successPanel == null ? null : successPanel.transform as RectTransform;
+            if (rect == null) yield break;
+            yield return new WaitForSecondsRealtime(0.14f);
+            rect.localScale = Vector3.one * 0.98f;
+            yield return new WaitForSecondsRealtime(0.08f);
+            rect.localScale = Vector3.one * 1.015f;
+            yield return new WaitForSecondsRealtime(0.12f);
+            rect.localScale = Vector3.one;
+            successCelebration = null;
+        }
+
+        private void StartFailureFeedback()
+        {
+            StopRoutine(ref failureFeedback);
+            failureFeedback = StartCoroutine(FailureFeedbackRoutine());
+        }
+
+        private IEnumerator FailureFeedbackRoutine()
+        {
+            var rect = failPanel == null ? null : failPanel.transform as RectTransform;
+            if (rect == null) yield break;
+            var basePosition = rect.anchoredPosition;
+            for (var i = 0; i < 4; i++)
+            {
+                rect.anchoredPosition = basePosition + new Vector2(i % 2 == 0 ? -12f : 12f, 0f);
+                yield return new WaitForSecondsRealtime(0.035f);
+            }
+            rect.anchoredPosition = basePosition;
+            failureFeedback = null;
+        }
+
+        private void StopRoutine(ref Coroutine routine)
+        {
+            if (routine != null) StopCoroutine(routine);
+            routine = null;
         }
 
         private static void SetPanelImmediate(GameObject panel, ref CanvasGroup group, bool visible)
@@ -420,6 +507,8 @@ namespace ImpossibleLevels.UI
             if (pauseTransition != null) StopCoroutine(pauseTransition);
             if (successTransition != null) StopCoroutine(successTransition);
             if (failTransition != null) StopCoroutine(failTransition);
+            if (successCelebration != null) StopCoroutine(successCelebration);
+            if (failureFeedback != null) StopCoroutine(failureFeedback);
             if (starsReveal != null) StopCoroutine(starsReveal);
             if (coinPulse != null) StopCoroutine(coinPulse);
             if (hintPulse != null) StopCoroutine(hintPulse);
