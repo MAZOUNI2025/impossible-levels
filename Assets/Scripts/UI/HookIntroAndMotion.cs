@@ -3,77 +3,143 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using TMPro;
 using ImpossibleLevels.Audio;
+using ImpossibleLevels.Levels;
 
 namespace ImpossibleLevels.UI
 {
     public sealed class HookIntroController : MonoBehaviour
     {
         [SerializeField] private CanvasGroup overlay;
-        [SerializeField] private RectTransform keyVisual;
-        [SerializeField] private RectTransform doorVisual;
+        [SerializeField] private RectTransform primaryVisual;
+        [SerializeField] private RectTransform secondaryVisual;
         [SerializeField] private TMP_Text message;
         [SerializeField] private float duration = 3.2f;
 
         private const string FirstLevelTutorialSeenKey = "il.tutorial.level1_seen";
-        private bool firstLevelRuntimeMode;
+        private int tutorialLevel = 1;
+        private GameplayRule tutorialRule = GameplayRule.KeyDoor;
+        private bool runtimeMode;
 
-        public static bool ShouldShowFirstLevelTutorial => PlayerPrefs.GetInt(FirstLevelTutorialSeenKey, 0) == 0;
+        public static bool ShouldShowFirstLevelTutorial => ShouldShowTutorial(1);
 
-        public void ConfigureRuntime(CanvasGroup runtimeOverlay, RectTransform runtimeKeyVisual, RectTransform runtimeDoorVisual, TMP_Text runtimeMessage)
+        public static bool ShouldShowTutorial(int levelId)
+        {
+            if (levelId < 1 || levelId > 5) return false;
+            return PlayerPrefs.GetInt(TutorialSeenKey(levelId), 0) == 0;
+        }
+
+        public void ConfigureRuntime(CanvasGroup runtimeOverlay, RectTransform runtimePrimaryVisual,
+            RectTransform runtimeSecondaryVisual, TMP_Text runtimeMessage, int levelId, GameplayRule rule)
         {
             overlay = runtimeOverlay;
-            keyVisual = runtimeKeyVisual;
-            doorVisual = runtimeDoorVisual;
+            primaryVisual = runtimePrimaryVisual;
+            secondaryVisual = runtimeSecondaryVisual;
             message = runtimeMessage;
-            firstLevelRuntimeMode = true;
-            duration = 3.2f;
+            runtimeMode = true;
+            tutorialLevel = Mathf.Clamp(levelId, 1, 5);
+            tutorialRule = rule;
+            duration = tutorialLevel == 1 ? 3.2f : 2.8f;
+        }
+
+        public static string GetTutorialBodyKey(GameplayRule rule)
+        {
+            return rule switch
+            {
+                GameplayRule.DragPlace => "TUTORIAL_DRAG_BODY",
+                GameplayRule.SwitchState => "TUTORIAL_SWITCH_BODY",
+                GameplayRule.RevealObservation => "TUTORIAL_REVEAL_BODY",
+                GameplayRule.FairSequence => "TUTORIAL_SEQUENCE_BODY",
+                _ => "TUTORIAL_BODY"
+            };
+        }
+
+        public static string GetPrimaryVisualKey(GameplayRule rule)
+        {
+            return rule switch
+            {
+                GameplayRule.DragPlace => "block",
+                GameplayRule.SwitchState => "switch",
+                GameplayRule.RevealObservation => "reveal_trigger",
+                GameplayRule.FairSequence => "star_filled",
+                _ => "key"
+            };
+        }
+
+        public static string GetSecondaryVisualKey(GameplayRule rule)
+        {
+            return rule == GameplayRule.RevealObservation ? "key" : "door";
+        }
+
+        public static string GetPrimaryLabelKey(GameplayRule rule)
+        {
+            return rule switch
+            {
+                GameplayRule.DragPlace => "TUTORIAL_BLOCK",
+                GameplayRule.SwitchState => "TUTORIAL_SWITCH",
+                GameplayRule.RevealObservation => "TUTORIAL_REVEAL",
+                GameplayRule.FairSequence => "TUTORIAL_SEQUENCE",
+                _ => "TUTORIAL_KEY"
+            };
+        }
+
+        public static string GetSecondaryLabelKey(GameplayRule rule)
+        {
+            return rule == GameplayRule.RevealObservation ? "TUTORIAL_KEY" : "TUTORIAL_DOOR";
+        }
+
+        private static string TutorialSeenKey(int levelId)
+        {
+            return levelId == 1 ? FirstLevelTutorialSeenKey : "il.tutorial.level" + levelId + "_seen";
         }
 
         private IEnumerator Start()
         {
             if (overlay == null) yield break;
-            if (firstLevelRuntimeMode && !ShouldShowFirstLevelTutorial)
+            if (!runtimeMode)
+            {
+                overlay.alpha = 1f;
+                if (message != null)
+                {
+                    message.alignment = LocalizationService.IsArabic ? TextAlignmentOptions.Right : TextAlignmentOptions.Center;
+                    message.text = LocalizationService.Get("HOOK_OPEN");
+                    LocalizationService.ApplyTo(message);
+                }
+                yield return new WaitForSecondsRealtime(0.55f);
+                if (message != null) message.text = LocalizationService.Get("HOOK_NOT_YET");
+                yield return Pulse(secondaryVisual, 0.18f);
+                if (primaryVisual != null) primaryVisual.localScale = Vector3.one * 1.12f;
+                if (AudioDirector.Instance != null) AudioDirector.Instance.Invalid();
+                yield return new WaitForSecondsRealtime(0.4f);
+                if (message != null) message.text = LocalizationService.Get("HOOK_TITLE");
+                if (AudioDirector.Instance != null) AudioDirector.Instance.KeyPickup();
+                yield return new WaitForSecondsRealtime(Mathf.Max(0f, duration - 1.1f));
+                yield return FadeOut();
+                yield break;
+            }
+            if (!ShouldShowTutorial(tutorialLevel))
             {
                 HideOverlay();
                 yield break;
             }
 
-            if (firstLevelRuntimeMode)
-            {
-                PlayerPrefs.SetInt(FirstLevelTutorialSeenKey, 1);
-                PlayerPrefs.Save();
-            }
-
+            PlayerPrefs.SetInt(TutorialSeenKey(tutorialLevel), 1);
+            PlayerPrefs.Save();
             overlay.alpha = 1f;
+            overlay.interactable = false;
+            overlay.blocksRaycasts = false;
+
             if (message != null)
             {
                 message.alignment = LocalizationService.IsArabic ? TextAlignmentOptions.Right : TextAlignmentOptions.Center;
+                message.text = LocalizationService.Get(GetTutorialBodyKey(tutorialRule));
                 LocalizationService.ApplyTo(message);
-                message.text = firstLevelRuntimeMode
-                    ? LocalizationService.Get("TUTORIAL_BODY")
-                    : LocalizationService.Get("HOOK_OPEN");
             }
 
-            if (firstLevelRuntimeMode)
-            {
-                yield return new WaitForSecondsRealtime(0.35f);
-                yield return Pulse(keyVisual, 0.18f);
-                yield return new WaitForSecondsRealtime(0.35f);
-                yield return Pulse(doorVisual, 0.18f);
-                yield return new WaitForSecondsRealtime(Mathf.Max(0f, duration - 0.95f));
-                yield return FadeOut();
-                yield break;
-            }
-
-            yield return new WaitForSecondsRealtime(0.55f);
-            if (message != null) message.text = LocalizationService.Get("HOOK_NOT_YET");
-            yield return Pulse(doorVisual, 0.18f);
-            if (keyVisual != null) keyVisual.localScale = Vector3.one * 1.12f;
-            if (AudioDirector.Instance != null) AudioDirector.Instance.Invalid();
-            yield return new WaitForSecondsRealtime(0.4f);
-            if (message != null) message.text = LocalizationService.Get("HOOK_TITLE");
-            if (AudioDirector.Instance != null) AudioDirector.Instance.KeyPickup();
-            yield return new WaitForSecondsRealtime(duration - 1.1f);
+            yield return new WaitForSecondsRealtime(tutorialLevel == 1 ? 0.35f : 0.22f);
+            yield return Pulse(primaryVisual, 0.18f);
+            yield return new WaitForSecondsRealtime(tutorialLevel == 1 ? 0.35f : 0.28f);
+            yield return Pulse(secondaryVisual, 0.18f);
+            yield return new WaitForSecondsRealtime(Mathf.Max(0f, duration - (tutorialLevel == 1 ? 0.95f : 0.80f)));
             yield return FadeOut();
         }
 

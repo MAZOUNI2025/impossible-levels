@@ -280,9 +280,10 @@ namespace ImpossibleLevels.Core
             var objectiveLabel = AddTextRelative(objectivePanel, LocalizationService.Get("GAME_OBJECTIVE"), new Vector2(0.5f, 0.59f), new Vector2(0.94f, 0.56f), 20, Color.white, TextAlignmentOptions.Center);
             var hintLabel = AddText(root, "", new Vector2(0.5f, 0.18f), new Vector2(0.88f, 0.055f), 19, new Color(0.10f, 0.82f, 0.78f), TextAlignmentOptions.Center);
 
-            if (selectedLevel == 1 && HookIntroController.ShouldShowFirstLevelTutorial)
+            if (HookIntroController.ShouldShowTutorial(selectedLevel))
             {
-                BuildFirstLevelTutorial(root);
+                var tutorialRule = selectedEntry.mechanics != null ? selectedEntry.mechanics.rule : GameplayRule.KeyDoor;
+                BuildTutorial(root, selectedLevel, tutorialRule);
             }
 
             var pausePanel = AddPanel(root, new Color(0.035f, 0.055f, 0.14f, 0.98f), new Vector2(0.5f, 0.50f), new Vector2(0.72f, 0.42f));
@@ -336,26 +337,59 @@ namespace ImpossibleLevels.Core
             failPanel.gameObject.SetActive(false);
         }
 
-        private void BuildFirstLevelTutorial(RectTransform root)
+        private void BuildTutorial(RectTransform root, int levelId, GameplayRule rule)
         {
-            var overlay = CreateScreen("FirstLevelTutorial", root);
+            var overlay = CreateScreen("TutorialCue_" + levelId.ToString("00"), root);
             var canvasGroup = overlay.gameObject.AddComponent<CanvasGroup>();
             canvasGroup.alpha = 0f;
             canvasGroup.interactable = false;
             canvasGroup.blocksRaycasts = false;
 
             AddPanel(overlay, new Color(0.005f, 0.012f, 0.05f, 0.72f), new Vector2(0.5f, 0.665f), new Vector2(0.80f, 0.17f));
-            AddPanel(overlay, new Color(0.10f, 0.82f, 0.78f, 0.85f), new Vector2(0.5f, 0.75f), new Vector2(0.50f, 0.004f));
+            AddPanel(overlay, TutorialAccentColor(rule), new Vector2(0.5f, 0.75f), new Vector2(0.50f, 0.004f));
             var card = AddPanel(overlay, new Color(0.06f, 0.08f, 0.16f, 0.98f), new Vector2(0.5f, 0.665f), new Vector2(0.76f, 0.14f));
-            AddTextRelative(card, LocalizationService.Get("TUTORIAL_TITLE"), new Vector2(0.5f, 0.82f), new Vector2(0.74f, 0.20f), 20, new Color(0.10f, 0.82f, 0.78f), TextAlignmentOptions.Center);
-            var message = AddTextRelative(card, LocalizationService.Get("TUTORIAL_BODY"), new Vector2(0.5f, 0.51f), new Vector2(0.58f, 0.32f), 19, Color.white, TextAlignmentOptions.Center);
-            var keyImage = AddImagePanelRelative(card, ArtAssetLibrary.GetGameplaySprite("key"), Color.white, new Vector2(0.14f, 0.52f), new Vector2(0.10f, 0.44f), true);
-            var doorImage = AddImagePanelRelative(card, ArtAssetLibrary.GetGameplaySprite("door"), Color.white, new Vector2(0.86f, 0.52f), new Vector2(0.12f, 0.52f), true);
-            AddTextRelative(card, LocalizationService.Get("TUTORIAL_KEY"), new Vector2(0.14f, 0.17f), new Vector2(0.22f, 0.18f), 12, new Color(1f, 0.78f, 0.24f), TextAlignmentOptions.Center);
-            AddTextRelative(card, LocalizationService.Get("TUTORIAL_DOOR"), new Vector2(0.86f, 0.17f), new Vector2(0.22f, 0.18f), 12, new Color(0.55f, 0.22f, 1f), TextAlignmentOptions.Center);
+            var titleKey = levelId == 1 ? "TUTORIAL_TITLE" : "TUTORIAL_RULE_TITLE";
+            AddTextRelative(card, LocalizationService.Get(titleKey), new Vector2(0.5f, 0.82f), new Vector2(0.74f, 0.20f), 20, TutorialAccentColor(rule), TextAlignmentOptions.Center);
+            var message = AddTextRelative(card, LocalizationService.Get(HookIntroController.GetTutorialBodyKey(rule)), new Vector2(0.5f, 0.51f), new Vector2(0.58f, 0.32f), 19, Color.white, TextAlignmentOptions.Center);
+            var primaryVisual = AddTutorialVisual(card, HookIntroController.GetPrimaryVisualKey(rule), TutorialPrimaryColor(rule), new Vector2(0.14f, 0.52f), new Vector2(0.10f, 0.44f));
+            var secondaryVisual = AddTutorialVisual(card, HookIntroController.GetSecondaryVisualKey(rule), new Color(0.55f, 0.22f, 1f), new Vector2(0.86f, 0.52f), new Vector2(0.12f, 0.52f));
+            AddTextRelative(card, LocalizationService.Get(HookIntroController.GetPrimaryLabelKey(rule)), new Vector2(0.14f, 0.17f), new Vector2(0.28f, 0.18f), 12, TutorialPrimaryColor(rule), TextAlignmentOptions.Center);
+            AddTextRelative(card, LocalizationService.Get(HookIntroController.GetSecondaryLabelKey(rule)), new Vector2(0.86f, 0.17f), new Vector2(0.28f, 0.18f), 12, new Color(0.55f, 0.22f, 1f), TextAlignmentOptions.Center);
 
             var controller = overlay.gameObject.AddComponent<HookIntroController>();
-            controller.ConfigureRuntime(canvasGroup, keyImage.rectTransform, doorImage.rectTransform, message);
+            controller.ConfigureRuntime(canvasGroup, primaryVisual, secondaryVisual, message, levelId, rule);
+        }
+
+        private static RectTransform AddTutorialVisual(RectTransform card, string assetName, Color fallbackColor, Vector2 anchor, Vector2 size)
+        {
+            var sprite = ArtAssetLibrary.GetGameplaySprite(assetName);
+            if (sprite != null)
+            {
+                return AddImagePanelRelative(card, sprite, Color.white, anchor, size, true).rectTransform;
+            }
+
+            return AddPanelRelative(card, new Color(fallbackColor.r, fallbackColor.g, fallbackColor.b, 0.72f), anchor, size);
+        }
+
+        private static Color TutorialAccentColor(GameplayRule rule)
+        {
+            return rule == GameplayRule.FairSequence ? new Color(1f, 0.78f, 0.24f) : new Color(0.10f, 0.82f, 0.78f);
+        }
+
+        private static Color TutorialPrimaryColor(GameplayRule rule)
+        {
+            switch (rule)
+            {
+                case GameplayRule.DragPlace:
+                    return new Color(0.38f, 0.68f, 0.92f);
+                case GameplayRule.SwitchState:
+                case GameplayRule.RevealObservation:
+                    return new Color(0.10f, 0.82f, 0.78f);
+                case GameplayRule.FairSequence:
+                    return new Color(1f, 0.78f, 0.24f);
+                default:
+                    return new Color(1f, 0.78f, 0.24f);
+            }
         }
 
         private void BuildArenaPresentation()
