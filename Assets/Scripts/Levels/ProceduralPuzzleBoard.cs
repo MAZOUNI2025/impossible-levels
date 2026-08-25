@@ -1,5 +1,5 @@
-using System.Collections;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using ImpossibleLevels.Audio;
@@ -19,12 +19,26 @@ namespace ImpossibleLevels.Levels
 
         private readonly List<PuzzleNode> nodes = new();
         private Sprite squareSprite;
-        private bool hasKey;
-        private bool solved;
-        private Vector2 pointerStart;
+        private TouchInputRouter inputRouter;
+        private LevelMechanicConfig mechanicConfig;
+        private PuzzleNode pressedNode;
         private PuzzleNode draggedNode;
+        private Vector2 pointerStart;
+        private int activePointerId = int.MinValue;
+        private bool hasKey;
+        private bool blockPlaced;
+        private bool switchOn;
+        private bool revealActive;
+        private bool solved;
+        private int sequenceProgress;
         private float startedAt;
         private int hintCount;
+        private Vector2 blockTargetPosition;
+        private PuzzleNode hiddenKeyNode;
+        private PuzzleNode doorNode;
+        private PuzzleNode switchNode;
+        private DoorState doorState = DoorState.Locked;
+        private readonly List<PuzzleNode> sequenceNodes = new();
 
         // Presentation-only notification; gameplay and progression remain authoritative below.
         public event Action<int, int, int> CompletionSummaryReady;
@@ -34,6 +48,7 @@ namespace ImpossibleLevels.Levels
         private static readonly Color Purple = new(0.55f, 0.22f, 1f);
         private static readonly Color Teal = new(0.10f, 0.82f, 0.78f);
         private static readonly Color Slate = new(0.13f, 0.18f, 0.34f);
+        private static readonly Color Disabled = new(0.35f, 0.40f, 0.55f, 0.55f);
 
         public void Configure(LevelRuntime levelRuntime, Transform root, Camera camera)
         {
@@ -42,75 +57,234 @@ namespace ImpossibleLevels.Levels
             gameplayCamera = camera;
         }
 
+        private void Awake()
+        {
+            inputRouter = FindFirstObjectByType<TouchInputRouter>();
+        }
+
+        private void OnEnable()
+        {
+            if (inputRouter == null) inputRouter = FindFirstObjectByType<TouchInputRouter>();
+            if (inputRouter != null)
+            {
+                inputRouter.PointerPressed += OnPointerPressed;
+                inputRouter.PointerMoved += OnPointerMoved;
+                inputRouter.PointerReleased += OnPointerReleased;
+            }
+
+            if (runtime != null) runtime.StateChanged += OnRuntimeStateChanged;
+        }
+
+        private void OnDisable()
+        {
+            if (inputRouter != null)
+            {
+                inputRouter.PointerPressed -= OnPointerPressed;
+                inputRouter.PointerMoved -= OnPointerMoved;
+                inputRouter.PointerReleased -= OnPointerReleased;
+            }
+
+            if (runtime != null) runtime.StateChanged -= OnRuntimeStateChanged;
+            ResetPointerState(true);
+        }
+
         private void Start()
         {
             runtime = runtime != null ? runtime : FindFirstObjectByType<LevelRuntime>();
             gameplayCamera = gameplayCamera != null ? gameplayCamera : Camera.main;
+            if (inputRouter == null) inputRouter = FindFirstObjectByType<TouchInputRouter>();
+            if (inputRouter != null)
+            {
+                inputRouter.PointerPressed -= OnPointerPressed;
+                inputRouter.PointerMoved -= OnPointerMoved;
+                inputRouter.PointerReleased -= OnPointerReleased;
+                inputRouter.PointerPressed += OnPointerPressed;
+                inputRouter.PointerMoved += OnPointerMoved;
+                inputRouter.PointerReleased += OnPointerReleased;
+            }
+
+            if (runtime != null)
+            {
+                runtime.StateChanged -= OnRuntimeStateChanged;
+                runtime.StateChanged += OnRuntimeStateChanged;
+            }
+
             levelIndex = Mathf.Clamp(PlayerPrefs.GetInt("il.selected_level", levelIndex), 1, 30);
             if (runtime != null) runtime.SetLevelIndex(levelIndex);
             squareSprite = CreateSquareSprite();
-            startedAt = Time.unscaledTime;
             BuildLevel(levelIndex);
         }
 
-        private void Update()
+        public void UseHint()
         {
-            if (solved || runtime == null || runtime.State != LevelState.Playing) return;
+            if (solved) return;
+            hintCount++;
+            if (AudioDirector.Instance != null) AudioDirector.Instance.Hint();
+            HapticsFeedback.TryPulse();
+            var hintedNode = FindHintTarget();
+            if (hintedNode != null) hintedNode.PulseHint();
+            var progression = FindFirstObjectByType<ProgressionService>();
+            if (progression != null && progression.Coins >= 5) progression.SpendCoins(5);
+        }
 
-            if (TryGetPointerDown(out var screenPosition))
+        private void OnRuntimeStateChanged(LevelState state)
+        {
+            if (state == LevelState.Playing && startedAt > 0f && (nodes.Count == 0 || AllNodesDestroyed()))
             {
-                pointerStart = WorldPoint(screenPosition);
-                draggedNode = FindNode(pointerStart);
-                if (draggedNode != null && draggedNode.draggable) draggedNode.BeginDrag();
-            }
-
-            if (draggedNode != null && TryGetPointerHeld(out screenPosition))
-            {
-                draggedNode.transform.position = WorldPoint(screenPosition);
-            }
-
-            if (draggedNode != null && TryGetPointerUp(out screenPosition))
-            {
-                var releasePoint = WorldPoint(screenPosition);
-                var distance = Vector2.Distance(pointerStart, releasePoint);
-                if (distance < 0.22f) HandleTap(draggedNode);
-                else HandleDrop(draggedNode, releasePoint);
-                draggedNode.EndDrag();
-                draggedNode = null;
-            }
-            else if (draggedNode == null && TryGetPointerUp(out screenPosition))
-            {
-                var node = FindNode(WorldPoint(screenPosition));
-                if (node != null) HandleTap(node);
+                BuildLevel(levelIndex);
             }
         }
 
-    public void UseHint()
-    {
-        if (solved) return;
-        hintCount++;
-        if (AudioDirector.Instance != null) AudioDirector.Instance.Hint();
-        HapticsFeedback.TryPulse();
-        var hintedNode = FindHintTarget();
-        if (hintedNode != null) hintedNode.PulseHint();
-        var progression = FindFirstObjectByType<ProgressionService>();
-        if (progression != null && progression.Coins >= 5) progression.SpendCoins(5);
-    }
+        private void OnPointerPressed(PointerSample sample)
+        {
+            if (solved || runtime == null || runtime.State != LevelState.Playing || activePointerId != int.MinValue)
+            {
+                return;
+            }
+
+            activePointerId = sample.PointerId;
+            pointerStart = WorldPoint(sample.ScreenPosition);
+            pressedNode = FindNode(pointerStart);
+            draggedNode = pressedNode != null && pressedNode.CanDragFor(mechanicConfig) ? pressedNode : null;
+            if (draggedNode != null) draggedNode.BeginDrag();
+        }
+
+        private void OnPointerMoved(PointerSample sample)
+        {
+            if (sample.PointerId != activePointerId || draggedNode == null || runtime == null || runtime.State != LevelState.Playing)
+            {
+                return;
+            }
+
+            draggedNode.transform.position = WorldPoint(sample.ScreenPosition);
+        }
+
+        private void OnPointerReleased(PointerSample sample)
+        {
+            if (sample.PointerId != activePointerId)
+            {
+                return;
+            }
+
+            if (runtime == null || runtime.State != LevelState.Playing)
+            {
+                ResetPointerState(true);
+                return;
+            }
+
+            var releasePoint = WorldPoint(sample.ScreenPosition);
+            var node = draggedNode;
+            var distance = Vector2.Distance(pointerStart, releasePoint);
+            if (sample.IsCanceled)
+            {
+                if (node != null) node.ResetToStart();
+                ResetPointerState(true);
+                return;
+            }
+
+            if (node != null)
+            {
+                if (distance < 0.22f) HandleTap(node);
+                else HandleDrop(node, releasePoint);
+                node.EndDrag();
+            }
+            else
+            {
+                var releasedNode = FindNode(releasePoint);
+                if (releasedNode != null && releasedNode == pressedNode && distance < 0.45f)
+                {
+                    HandleTap(releasedNode);
+                }
+            }
+
+            ResetPointerState(false);
+        }
+
+        private void ResetPointerState(bool cancelDrag)
+        {
+            if (cancelDrag && draggedNode != null) draggedNode.ResetToStart();
+            draggedNode = null;
+            pressedNode = null;
+            activePointerId = int.MinValue;
+        }
 
         private void BuildLevel(int index)
         {
             ClearBoard();
+            hasKey = false;
+            blockPlaced = false;
+            switchOn = false;
+            revealActive = false;
+            solved = false;
+            sequenceProgress = 0;
+            hintCount = 0;
+            hiddenKeyNode = null;
+            doorNode = null;
+            switchNode = null;
+            doorState = DoorState.Locked;
+            sequenceNodes.Clear();
+            ResetPointerState(true);
+            startedAt = Time.unscaledTime;
+
+            var entries = LevelCatalogRuntime.All;
+            mechanicConfig = entries != null && index >= 1 && index <= entries.Count
+                ? entries[index - 1].mechanics
+                : null;
+            if (mechanicConfig == null)
+            {
+                mechanicConfig = LevelMechanicConfig.ForEntry(index, PuzzleType.Interaction, 1, "Open the door.", "Find the key.");
+            }
+
             CreateBlock("Background", new Vector2(0f, 0f), new Vector2(boardWidth, boardHeight), Navy, -10);
             CreateBlock("Floor", new Vector2(0f, -5.35f), new Vector2(7.4f, 0.45f), Slate, -1);
             CreateBlock("TopRail", new Vector2(0f, 5.35f), new Vector2(7.4f, 0.25f), Slate, -1);
             CreatePlayerVisual(new Vector2(-2.65f, -3.85f), new Vector2(0.95f, 1.15f));
 
-            var variation = (index - 1) % 6;
+            var variation = (mechanicConfig.deterministicSeed % 6 + 6) % 6;
             var keyPosition = new Vector2(-2.25f + (variation % 3) * 0.45f, 1.0f - (variation / 3) * 1.2f);
             var doorPosition = new Vector2(2.25f, -3.5f + (variation % 2) * 0.75f);
-            CreateNode("Key", keyPosition, new Vector2(0.78f, 0.78f), Amber, NodeKind.Key, false);
-            CreateNode("Door", doorPosition, new Vector2(1.35f, 2.15f), Purple, NodeKind.Door, false);
+            var keyIsVisible = mechanicConfig.rule != GameplayRule.RevealObservation;
+            var key = CreateNode("Key", keyPosition, new Vector2(0.78f, 0.78f), Amber, NodeKind.Key, false);
+            hiddenKeyNode = keyIsVisible ? null : key;
+            if (!keyIsVisible) key.SetVisible(false);
+            doorNode = CreateNode("Door", doorPosition, new Vector2(1.35f, 2.15f), Purple, NodeKind.Door, false);
+            doorNode.SetDoorState(DoorState.Locked);
 
+            switch (mechanicConfig.rule)
+            {
+                case GameplayRule.DragPlace:
+                    blockTargetPosition = new Vector2(0f, -1f);
+                    CreateNode("BlockTarget", blockTargetPosition, new Vector2(1.35f, 0.95f), Disabled, NodeKind.BlockTarget, false, false);
+                    CreateNode("MovableBlock", new Vector2(-0.6f, -2.3f), new Vector2(1.2f, 0.8f), Slate, NodeKind.Block, true);
+                    break;
+                case GameplayRule.SwitchState:
+                    switchNode = CreateNode("Switch", new Vector2(0f, 3.0f), new Vector2(1.1f, 0.35f), Teal, NodeKind.Switch, false);
+                    break;
+                case GameplayRule.RevealObservation:
+                    CreateNode("RevealTrigger", new Vector2(0f, 3.0f), new Vector2(1.1f, 0.65f), Teal, NodeKind.RevealTrigger, false);
+                    break;
+                case GameplayRule.FairSequence:
+                    CreateSequenceNodes();
+                    break;
+                case GameplayRule.KeyDoor:
+                    CreateLegacyDecorations(index);
+                    break;
+            }
+        }
+
+        private void CreateSequenceNodes()
+        {
+            var sequenceLength = Mathf.Clamp(mechanicConfig.sequenceLength, 1, 3);
+            for (var i = 0; i < sequenceLength; i++)
+            {
+                var position = new Vector2(-1.4f + i * 1.4f, 3.0f);
+                sequenceNodes.Add(CreateNode("SequenceStep_" + (i + 1), position, new Vector2(0.72f, 0.72f), Teal, NodeKind.SequenceStep, false, true, i));
+            }
+        }
+
+        private void CreateLegacyDecorations(int index)
+        {
+            if (index < 7) return;
             var decoyCount = 1 + Mathf.Min(4, (index - 1) / 6);
             for (var i = 0; i < decoyCount; i++)
             {
@@ -118,34 +292,29 @@ namespace ImpossibleLevels.Levels
                 var y = -1.1f + (i / 3) * 1.45f;
                 CreateNode("Decoy_" + i, new Vector2(x, y), new Vector2(0.75f, 0.75f), Teal, NodeKind.Decoy, i % 2 == 1);
             }
-
-            if (index >= 7)
-            {
-                CreateNode("Switch", new Vector2(0f, 3.0f), new Vector2(1.1f, 0.35f), Teal, NodeKind.Switch, false);
-            }
-
-            if (index >= 13)
-            {
-                CreateNode("MovableBlock", new Vector2(-0.6f, -2.3f), new Vector2(1.2f, 0.8f), Slate, NodeKind.Block, true);
-            }
         }
 
         private void HandleTap(PuzzleNode node)
         {
-            if (node == null || solved) return;
+            if (node == null || solved || runtime == null || runtime.State != LevelState.Playing) return;
             if (AudioDirector.Instance != null) AudioDirector.Instance.Tap();
 
-            switch (node.kind)
+            switch (node.Kind)
             {
                 case NodeKind.Key:
+                    if (!node.IsVisible) return;
+                    if (hasKey) return;
                     hasKey = true;
                     node.CollectFeedbackAndHide();
                     if (AudioDirector.Instance != null) AudioDirector.Instance.KeyPickup();
                     HapticsFeedback.TryPulse();
+                    UpdateDoorState();
                     break;
                 case NodeKind.Door:
-                    if (hasKey)
+                    if (CanComplete())
                     {
+                        doorState = DoorState.Open;
+                        node.SetDoorState(doorState);
                         node.PulseSuccess();
                         Complete();
                     }
@@ -157,8 +326,22 @@ namespace ImpossibleLevels.Levels
                     }
                     break;
                 case NodeKind.Switch:
-                    node.ToggleVisual();
+                    if (mechanicConfig.rule != GameplayRule.SwitchState) return;
+                    switchOn = !switchOn;
+                    node.SetToggled(switchOn);
                     node.PulseSuccess();
+                    UpdateDoorState();
+                    break;
+                case NodeKind.RevealTrigger:
+                    if (mechanicConfig.rule != GameplayRule.RevealObservation || revealActive) return;
+                    revealActive = true;
+                    if (hiddenKeyNode != null) hiddenKeyNode.SetVisible(true);
+                    node.SetToggled(true);
+                    node.PulseSuccess();
+                    UpdateDoorState();
+                    break;
+                case NodeKind.SequenceStep:
+                    HandleSequenceStep(node);
                     break;
                 case NodeKind.Decoy:
                     node.PulseInvalid();
@@ -167,30 +350,81 @@ namespace ImpossibleLevels.Levels
             }
         }
 
+        private void HandleSequenceStep(PuzzleNode node)
+        {
+            if (!hasKey || mechanicConfig.rule != GameplayRule.FairSequence)
+            {
+                node.PulseInvalid();
+                return;
+            }
+
+            if (node.SequenceIndex == sequenceProgress)
+            {
+                node.SetToggled(true);
+                node.PulseSuccess();
+                sequenceProgress++;
+                UpdateDoorState();
+            }
+            else
+            {
+                sequenceProgress = 0;
+                for (var i = 0; i < sequenceNodes.Count; i++) sequenceNodes[i].SetToggled(false);
+                node.PulseInvalid();
+                if (AudioDirector.Instance != null) AudioDirector.Instance.Invalid();
+                HapticsFeedback.TryPulse();
+            }
+        }
+
         private void HandleDrop(PuzzleNode node, Vector2 position)
         {
-            if (node == null) return;
-            if (node.kind == NodeKind.Block && Vector2.Distance(position, new Vector2(0f, -1f)) < 1.0f)
+            if (node == null || node.Kind != NodeKind.Block || mechanicConfig.rule != GameplayRule.DragPlace) return;
+            if (Vector2.Distance(position, blockTargetPosition) < 1.0f)
             {
-                node.transform.position = new Vector2(0f, -1f);
+                node.transform.position = blockTargetPosition;
+                node.SetDraggable(false);
+                blockPlaced = true;
                 if (AudioDirector.Instance != null) AudioDirector.Instance.Tap();
                 node.PulseSuccess();
+                UpdateDoorState();
             }
-            else if (node.kind == NodeKind.Block)
+            else
             {
-                node.transform.position = node.startPosition;
+                node.ResetToStart();
                 if (AudioDirector.Instance != null) AudioDirector.Instance.Invalid();
+                node.PulseInvalid();
             }
+        }
+
+        private bool CanComplete()
+        {
+            if (!hasKey) return false;
+            return mechanicConfig.rule switch
+            {
+                GameplayRule.DragPlace => blockPlaced,
+                GameplayRule.SwitchState => switchOn,
+                GameplayRule.RevealObservation => revealActive,
+                GameplayRule.FairSequence => sequenceProgress >= sequenceNodes.Count && sequenceNodes.Count > 0,
+                _ => true
+            };
+        }
+
+        private void UpdateDoorState()
+        {
+            if (doorNode == null || solved) return;
+            var nextState = CanComplete() ? DoorState.Ready : DoorState.Locked;
+            if (nextState == doorState) return;
+            doorState = nextState;
+            doorNode.SetDoorState(doorState);
         }
 
         private void Complete()
         {
-            if (solved) return;
+            if (solved || runtime == null || !CanComplete()) return;
             solved = true;
             var elapsed = Time.unscaledTime - startedAt;
-            var stars = runtime != null ? runtime.CalculateStars(elapsed, hintCount) : 3;
+            var stars = runtime.CalculateStars(elapsed, hintCount);
             var progression = FindFirstObjectByType<ProgressionService>();
-            var reward = runtime != null ? runtime.CalculateCoinReward(stars) : 10 + stars * 2;
+            var reward = runtime.CalculateCoinReward(stars);
             if (progression != null) progression.CompleteLevel(levelIndex, stars, reward);
             CompletionSummaryReady?.Invoke(levelIndex, stars, reward);
             if (AudioDirector.Instance != null)
@@ -214,31 +448,54 @@ namespace ImpossibleLevels.Levels
 
         private PuzzleNode FindHintTarget()
         {
+            if (mechanicConfig == null) return null;
+            switch (mechanicConfig.rule)
+            {
+                case GameplayRule.DragPlace:
+                    return FindNodeByKind(NodeKind.Block) ?? FindNodeByKind(NodeKind.Door);
+                case GameplayRule.SwitchState:
+                    return switchOn ? FindNodeByKind(NodeKind.Door) : switchNode;
+                case GameplayRule.RevealObservation:
+                    return revealActive ? FindNodeByKind(NodeKind.Key) : FindNodeByKind(NodeKind.RevealTrigger);
+                case GameplayRule.FairSequence:
+                    return sequenceProgress < sequenceNodes.Count ? sequenceNodes[sequenceProgress] : FindNodeByKind(NodeKind.Door);
+                default:
+                    return FindNodeByKind(NodeKind.Key) ?? FindNodeByKind(NodeKind.Door);
+            }
+        }
+
+        private PuzzleNode FindNodeByKind(NodeKind kind)
+        {
             for (var i = nodes.Count - 1; i >= 0; i--)
             {
                 var node = nodes[i];
-                if (node != null && node.gameObject.activeInHierarchy && node.kind == NodeKind.Key) return node;
+                if (node != null && node.gameObject.activeInHierarchy && node.Kind == kind) return node;
             }
             return null;
         }
 
-        private PuzzleNode CreateNode(string name, Vector2 position, Vector2 size, Color color, NodeKind kind, bool draggable)
+        private PuzzleNode CreateNode(string name, Vector2 position, Vector2 size, Color color, NodeKind kind, bool draggable, bool createCollider = true, int sequenceIndex = -1)
         {
             var obj = new GameObject(name);
             obj.transform.SetParent(levelRoot != null ? levelRoot : transform, false);
             obj.transform.position = position;
             obj.transform.localScale = new Vector3(size.x, size.y, 1f);
             var renderer = obj.AddComponent<SpriteRenderer>();
-            var gameplaySprite = ArtAssetLibrary.GetGameplaySprite(kind.ToString());
+            var gameplaySprite = UsesGameplayArt(kind) ? ArtAssetLibrary.GetGameplaySprite(kind.ToString()) : null;
             renderer.sprite = gameplaySprite ?? squareSprite;
             renderer.color = gameplaySprite != null ? Color.white : color;
             renderer.sortingOrder = 2;
-            var collider = obj.AddComponent<BoxCollider2D>();
-            collider.size = Vector2.one;
+            var collider = createCollider ? obj.AddComponent<BoxCollider2D>() : null;
+            if (collider != null) collider.size = Vector2.one;
             var node = obj.AddComponent<PuzzleNode>();
-            node.Configure(kind, draggable, position, size, renderer, collider);
+            node.Configure(kind, draggable, position, size, renderer, collider, sequenceIndex);
             nodes.Add(node);
             return node;
+        }
+
+        private static bool UsesGameplayArt(NodeKind kind)
+        {
+            return kind == NodeKind.Key || kind == NodeKind.Door || kind == NodeKind.Switch || kind == NodeKind.Decoy || kind == NodeKind.Block;
         }
 
         private void CreateBlock(string name, Vector2 position, Vector2 size, Color color, int sortingOrder)
@@ -275,8 +532,18 @@ namespace ImpossibleLevels.Levels
             for (var i = root.childCount - 1; i >= 0; i--) Destroy(root.GetChild(i).gameObject);
         }
 
+        private bool AllNodesDestroyed()
+        {
+            for (var i = 0; i < nodes.Count; i++)
+            {
+                if (nodes[i] != null) return false;
+            }
+            return true;
+        }
+
         private Vector2 WorldPoint(Vector2 screenPosition)
         {
+            if (gameplayCamera == null) return screenPosition;
             var world = gameplayCamera.ScreenToWorldPoint(new Vector3(screenPosition.x, screenPosition.y, -gameplayCamera.transform.position.z));
             return new Vector2(world.x, world.y);
         }
@@ -289,93 +556,113 @@ namespace ImpossibleLevels.Levels
             return Sprite.Create(texture, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);
         }
 
-        private static bool TryGetPointerDown(out Vector2 position)
+        private enum DoorState
         {
-            if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began)
-            {
-                position = Input.GetTouch(0).position;
-                return true;
-            }
-            position = Input.mousePosition;
-            return Input.GetMouseButtonDown(0);
+            Locked,
+            Ready,
+            Open
         }
 
-        private static bool TryGetPointerHeld(out Vector2 position)
+        private enum NodeKind
         {
-            if (Input.touchCount > 0)
-            {
-                var phase = Input.GetTouch(0).phase;
-                position = Input.GetTouch(0).position;
-                return phase == TouchPhase.Moved || phase == TouchPhase.Stationary;
-            }
-            position = Input.mousePosition;
-            return Input.GetMouseButton(0);
+            Key,
+            Door,
+            Switch,
+            Decoy,
+            Block,
+            BlockTarget,
+            RevealTrigger,
+            SequenceStep
         }
-
-        private static bool TryGetPointerUp(out Vector2 position)
-        {
-            if (Input.touchCount > 0 && (Input.GetTouch(0).phase == TouchPhase.Ended || Input.GetTouch(0).phase == TouchPhase.Canceled))
-            {
-                position = Input.GetTouch(0).position;
-                return true;
-            }
-            position = Input.mousePosition;
-            return Input.GetMouseButtonUp(0);
-        }
-
-        private enum NodeKind { Key, Door, Switch, Decoy, Block }
 
         private sealed class PuzzleNode : MonoBehaviour
         {
-            public NodeKind kind;
-            public bool draggable;
-            public Vector2 startPosition;
+            public NodeKind Kind { get; private set; }
+            public int SequenceIndex { get; private set; }
+            public bool IsVisible => gameObject.activeInHierarchy;
+            private bool canDrag;
+            private Vector2 startPosition;
             private Vector2 size;
             private SpriteRenderer nodeRenderer;
             private BoxCollider2D nodeCollider;
             private Color originalColor;
-            private bool toggledVisual;
+            private bool toggled;
 
-            public void Configure(NodeKind nodeKind, bool canDrag, Vector2 start, Vector2 nodeSize, SpriteRenderer nodeRenderer, BoxCollider2D nodeCollider)
+            public void Configure(NodeKind nodeKind, bool draggable, Vector2 start, Vector2 nodeSize, SpriteRenderer renderer, BoxCollider2D collider, int sequenceIndex)
             {
-                kind = nodeKind;
-                draggable = canDrag;
+                Kind = nodeKind;
+                canDrag = draggable;
                 startPosition = start;
                 size = nodeSize;
-                this.nodeRenderer = nodeRenderer;
-                this.nodeCollider = nodeCollider;
-                originalColor = this.nodeRenderer.color;
-                toggledVisual = false;
+                nodeRenderer = renderer;
+                nodeCollider = collider;
+                SequenceIndex = sequenceIndex;
+                originalColor = nodeRenderer != null ? nodeRenderer.color : Color.white;
+                toggled = false;
+            }
+
+            public bool CanDragFor(LevelMechanicConfig config)
+            {
+                return canDrag && config != null && config.rule == GameplayRule.DragPlace;
             }
 
             public bool Contains(Vector2 point)
             {
-                return nodeCollider != null && nodeCollider.bounds.Contains(point);
+                return nodeCollider != null && nodeCollider.enabled && nodeCollider.bounds.Contains(point);
             }
 
             public void BeginDrag()
             {
-                nodeRenderer.color = Color.Lerp(originalColor, Color.white, 0.25f);
+                if (!canDrag) return;
+                if (nodeRenderer != null) nodeRenderer.color = Color.Lerp(originalColor, Color.white, 0.25f);
                 transform.localScale = transform.localScale * 1.04f;
             }
 
             public void EndDrag()
             {
-                nodeRenderer.color = originalColor;
+                if (nodeRenderer != null) nodeRenderer.color = CurrentVisualColor();
                 transform.localScale = new Vector3(size.x, size.y, 1f);
             }
 
-            public void ToggleVisual()
+            public void ResetToStart()
             {
-                toggledVisual = !toggledVisual;
-                nodeRenderer.color = CurrentVisualColor();
+                transform.position = startPosition;
+                EndDrag();
+            }
+
+            public void SetDraggable(bool value)
+            {
+                canDrag = value;
+            }
+
+            public void SetVisible(bool visible)
+            {
+                gameObject.SetActive(visible);
+                if (nodeCollider != null) nodeCollider.enabled = visible;
+            }
+
+            public void SetToggled(bool value)
+            {
+                toggled = value;
+                if (nodeRenderer != null) nodeRenderer.color = CurrentVisualColor();
+            }
+
+            public void SetDoorState(DoorState state)
+            {
+                if (nodeRenderer == null) return;
+                nodeRenderer.color = state switch
+                {
+                    DoorState.Ready => Color.Lerp(originalColor, Color.white, 0.35f),
+                    DoorState.Open => Color.Lerp(originalColor, new Color(0.25f, 1f, 0.55f), 0.65f),
+                    _ => originalColor
+                };
             }
 
             public void PulseInvalid()
             {
                 StopAllCoroutines();
                 CancelInvoke(nameof(ResetColor));
-                nodeRenderer.color = Color.Lerp(CurrentVisualColor(), Color.red, 0.35f);
+                if (nodeRenderer != null) nodeRenderer.color = Color.Lerp(CurrentVisualColor(), Color.red, 0.35f);
                 Invoke(nameof(ResetColor), 0.16f);
             }
 
@@ -405,27 +692,27 @@ namespace ImpossibleLevels.Levels
             private IEnumerator SuccessRoutine()
             {
                 var startScale = transform.localScale;
-                nodeRenderer.color = Color.Lerp(originalColor, Color.white, 0.32f);
+                if (nodeRenderer != null) nodeRenderer.color = Color.Lerp(CurrentVisualColor(), Color.white, 0.32f);
                 transform.localScale = startScale * 1.10f;
                 yield return new WaitForSecondsRealtime(0.12f);
-                if (nodeRenderer != null) nodeRenderer.color = originalColor;
+                if (nodeRenderer != null) nodeRenderer.color = CurrentVisualColor();
                 transform.localScale = startScale;
             }
 
             private IEnumerator HintRoutine()
             {
                 var startScale = transform.localScale;
-                nodeRenderer.color = Color.Lerp(originalColor, Color.white, 0.45f);
+                if (nodeRenderer != null) nodeRenderer.color = Color.Lerp(CurrentVisualColor(), Color.white, 0.45f);
                 transform.localScale = startScale * 1.08f;
                 yield return new WaitForSecondsRealtime(0.18f);
-                if (nodeRenderer != null) nodeRenderer.color = originalColor;
+                if (nodeRenderer != null) nodeRenderer.color = CurrentVisualColor();
                 transform.localScale = startScale;
             }
 
             private IEnumerator CollectRoutine()
             {
                 var startScale = transform.localScale;
-                nodeRenderer.color = Color.Lerp(originalColor, Color.white, 0.45f);
+                if (nodeRenderer != null) nodeRenderer.color = Color.Lerp(CurrentVisualColor(), Color.white, 0.45f);
                 transform.localScale = startScale * 1.14f;
                 yield return new WaitForSecondsRealtime(0.12f);
                 gameObject.SetActive(false);
@@ -433,7 +720,7 @@ namespace ImpossibleLevels.Levels
 
             private Color CurrentVisualColor()
             {
-                return toggledVisual
+                return toggled
                     ? Color.Lerp(originalColor, new Color(0.10f, 0.95f, 0.82f), 0.35f)
                     : originalColor;
             }

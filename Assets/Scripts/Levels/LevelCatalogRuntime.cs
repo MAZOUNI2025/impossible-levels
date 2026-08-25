@@ -13,6 +13,7 @@ namespace ImpossibleLevels.Levels
         public int difficulty;
         public string objective;
         public string hint;
+        public LevelMechanicConfig mechanics;
     }
 
     public static class LevelCatalogRuntime
@@ -60,7 +61,8 @@ namespace ImpossibleLevels.Levels
                 type = type,
                 difficulty = difficulty,
                 objective = objective,
-                hint = hint
+                hint = hint,
+                mechanics = LevelMechanicConfig.ForEntry(index, type, difficulty, objective, hint)
             };
         }
     }

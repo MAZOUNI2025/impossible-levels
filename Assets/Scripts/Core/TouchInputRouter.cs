@@ -8,12 +8,14 @@ namespace ImpossibleLevels.Core
         public readonly Vector2 ScreenPosition;
         public readonly int PointerId;
         public readonly bool IsTouch;
+        public readonly bool IsCanceled;
 
-        public PointerSample(Vector2 screenPosition, int pointerId, bool isTouch)
+        public PointerSample(Vector2 screenPosition, int pointerId, bool isTouch, bool isCanceled = false)
         {
             ScreenPosition = screenPosition;
             PointerId = pointerId;
             IsTouch = isTouch;
+            IsCanceled = isCanceled;
         }
     }
 
@@ -44,7 +46,7 @@ namespace ImpossibleLevels.Core
                             break;
                         case TouchPhase.Ended:
                         case TouchPhase.Canceled:
-                            PointerReleased?.Invoke(sample);
+                            PointerReleased?.Invoke(new PointerSample(touch.position, touch.fingerId, true, touch.phase == TouchPhase.Canceled));
                             break;
                     }
                 }
