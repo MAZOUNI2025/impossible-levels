@@ -40,8 +40,11 @@ namespace ImpossibleLevels.Levels
         private DoorState doorState = DoorState.Locked;
         private readonly List<PuzzleNode> sequenceNodes = new();
 
-        // Presentation-only notification; gameplay and progression remain authoritative below.
+        // Presentation-only notifications; gameplay and progression remain authoritative below.
         public event Action<int, int, int> CompletionSummaryReady;
+        public event Action<int> HintUnavailable;
+
+        public const int HintCost = 5;
 
         private static readonly Color Navy = new(0.035f, 0.055f, 0.14f);
         private static readonly Color Amber = new(1f, 0.63f, 0.08f);
@@ -118,13 +121,20 @@ namespace ImpossibleLevels.Levels
         public void UseHint()
         {
             if (solved) return;
+            var progression = FindFirstObjectByType<ProgressionService>();
+            if (progression != null && progression.Coins < HintCost)
+            {
+                HintUnavailable?.Invoke(HintCost);
+                if (AudioDirector.Instance != null) AudioDirector.Instance.Invalid();
+                return;
+            }
+
             hintCount++;
             if (AudioDirector.Instance != null) AudioDirector.Instance.Hint();
             HapticsFeedback.TryPulse();
             var hintedNode = FindHintTarget();
             if (hintedNode != null) hintedNode.PulseHint();
-            var progression = FindFirstObjectByType<ProgressionService>();
-            if (progression != null && progression.Coins >= 5) progression.SpendCoins(5);
+            if (progression != null) progression.SpendCoins(HintCost);
         }
 
         private void OnRuntimeStateChanged(LevelState state)
@@ -430,9 +440,11 @@ namespace ImpossibleLevels.Levels
             var elapsed = Time.unscaledTime - startedAt;
             var stars = runtime.CalculateStars(elapsed, hintCount);
             var progression = FindFirstObjectByType<ProgressionService>();
-            var reward = runtime.CalculateCoinReward(stars);
-            if (progression != null) progression.CompleteLevel(levelIndex, stars, reward);
-            CompletionSummaryReady?.Invoke(levelIndex, stars, reward);
+            var calculatedReward = runtime.CalculateCoinReward(stars);
+            var grantedReward = progression != null
+                ? progression.CompleteLevel(levelIndex, stars, calculatedReward)
+                : 0;
+            CompletionSummaryReady?.Invoke(levelIndex, stars, grantedReward);
             if (AudioDirector.Instance != null)
             {
                 AudioDirector.Instance.DoorUnlock();

@@ -22,9 +22,10 @@ namespace ImpossibleLevels.Core
             return levelIndex <= HighestUnlockedLevel;
         }
 
-        public void CompleteLevel(int levelIndex, int stars, int coinReward)
+        public int CompleteLevel(int levelIndex, int stars, int coinReward)
         {
             var previousStars = PlayerPrefs.GetInt(LevelStarsPrefix + levelIndex, 0);
+            var firstClear = previousStars <= 0;
             if (stars > previousStars)
             {
                 PlayerPrefs.SetInt(LevelStarsPrefix + levelIndex, Mathf.Clamp(stars, 0, 3));
@@ -36,9 +37,11 @@ namespace ImpossibleLevels.Core
                 PlayerPrefs.SetInt(HighestUnlockedKey, HighestUnlockedLevel);
             }
 
-            Coins += Mathf.Max(0, coinReward);
+            var grantedReward = firstClear ? Mathf.Max(0, coinReward) : 0;
+            Coins += grantedReward;
             PlayerPrefs.SetInt(CoinsKey, Coins);
             PlayerPrefs.Save();
+            return grantedReward;
         }
 
         public int GetStars(int levelIndex)

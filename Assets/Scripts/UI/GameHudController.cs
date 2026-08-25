@@ -106,7 +106,11 @@ namespace ImpossibleLevels.UI
         private void OnDisable()
         {
             if (levelRuntime != null) levelRuntime.StateChanged -= OnStateChanged;
-            if (puzzleBoard != null) puzzleBoard.CompletionSummaryReady -= OnCompletionSummaryReady;
+            if (puzzleBoard != null)
+            {
+                puzzleBoard.CompletionSummaryReady -= OnCompletionSummaryReady;
+                puzzleBoard.HintUnavailable -= OnHintUnavailable;
+            }
             StopFeedbackCoroutines();
         }
 
@@ -209,6 +213,8 @@ namespace ImpossibleLevels.UI
             if (puzzleBoard == null) return;
             puzzleBoard.CompletionSummaryReady -= OnCompletionSummaryReady;
             puzzleBoard.CompletionSummaryReady += OnCompletionSummaryReady;
+            puzzleBoard.HintUnavailable -= OnHintUnavailable;
+            puzzleBoard.HintUnavailable += OnHintUnavailable;
         }
 
         private void OnCompletionSummaryReady(int levelIndex, int stars, int reward)
@@ -217,6 +223,18 @@ namespace ImpossibleLevels.UI
             hasCurrentRunSummary = true;
             currentRunStars = Mathf.Clamp(stars, 0, 3);
             currentRunReward = Mathf.Max(0, reward);
+        }
+
+        private void OnHintUnavailable(int cost)
+        {
+            if (hintLabel != null)
+            {
+                hintLabel.text = LocalizationService.Format("GAME_HINT_NEED_COINS", Mathf.Max(0, cost));
+                hintLabel.color = new Color(1f, 0.63f, 0.08f);
+                PulseTransform(hintLabel.rectTransform, ref hintPulse, 1.03f, 0.10f);
+            }
+            SetPanel(hintLabel != null ? hintLabel.gameObject : null, true);
+            RefreshCoinsFromProgression();
         }
 
         private static void BindButton(Button button, UnityEngine.Events.UnityAction action)
