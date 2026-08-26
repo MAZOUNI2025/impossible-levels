@@ -19,6 +19,7 @@ namespace ImpossibleLevels.Levels
 
         private readonly List<PuzzleNode> nodes = new();
         private Sprite squareSprite;
+        private Sprite glowSprite;
         private TouchInputRouter inputRouter;
         private LevelMechanicConfig mechanicConfig;
         private PuzzleNode pressedNode;
@@ -115,6 +116,7 @@ namespace ImpossibleLevels.Levels
             levelIndex = Mathf.Clamp(PlayerPrefs.GetInt("il.selected_level", levelIndex), 1, 30);
             if (runtime != null) runtime.SetLevelIndex(levelIndex);
             squareSprite = CreateSquareSprite();
+            glowSprite = CreateGlowSprite();
             BuildLevel(levelIndex);
         }
 
@@ -246,6 +248,7 @@ namespace ImpossibleLevels.Levels
             }
 
             CreateBlock("Background", new Vector2(0f, 0f), new Vector2(boardWidth, boardHeight), Navy, -10);
+            CreateChamberDepth();
             CreateBlock("Floor", new Vector2(0f, -5.35f), new Vector2(7.4f, 0.45f), Slate, -1);
             CreateBlock("TopRail", new Vector2(0f, 5.35f), new Vector2(7.4f, 0.25f), Slate, -1);
             CreatePlayerVisual(new Vector2(-2.65f, -3.85f), new Vector2(0.95f, 1.15f));
@@ -291,6 +294,23 @@ namespace ImpossibleLevels.Levels
 
             if (mechanicConfig.requiresSequence) CreateSequenceNodes();
             CreateLegacyDecorations(index);
+        }
+
+        // Presentation only: shallow planes, signal strips, and light pools make the 2D board read as a test chamber.
+        private void CreateChamberDepth()
+        {
+            CreateBlock("InnerField", new Vector2(0f, 0.10f), new Vector2(7.45f, 10.10f), new Color(0.06f, 0.11f, 0.23f), -9);
+            CreateBlock("DepthWallLeft", new Vector2(-3.82f, 0f), new Vector2(0.18f, 9.95f), new Color(0.20f, 0.30f, 0.47f, 0.7f), -8);
+            CreateBlock("DepthWallRight", new Vector2(3.82f, 0f), new Vector2(0.18f, 9.95f), new Color(0.20f, 0.30f, 0.47f, 0.7f), -8);
+            CreateBlock("DepthHeader", new Vector2(0f, 4.95f), new Vector2(7.45f, 0.13f), new Color(0.12f, 0.82f, 0.78f, 0.45f), -7);
+
+            for (var i = 0; i < 4; i++)
+            {
+                var x = -2.65f + i * 1.78f;
+                var amber = i % 2 == 0 ? Amber : Teal;
+                CreateBlock("SignalStrip_" + i, new Vector2(x, -4.88f), new Vector2(0.76f, 0.07f), new Color(amber.r, amber.g, amber.b, 0.72f), -6);
+                CreateBlock("SignalPillar_" + i, new Vector2(x, 4.45f), new Vector2(0.10f, 0.54f), new Color(amber.r, amber.g, amber.b, 0.55f), -6);
+            }
         }
 
         private Vector2 KeyPositionFor(int variation)
@@ -529,13 +549,63 @@ namespace ImpossibleLevels.Levels
             var gameplaySprite = UsesGameplayArt(kind) ? GameplaySpriteFor(kind) : null;
             renderer.sprite = gameplaySprite ?? squareSprite;
             renderer.color = gameplaySprite != null ? SpriteTintFor(kind, color) : color;
-            renderer.sortingOrder = 2;
+            renderer.sortingOrder = 4;
+
+            CreateNodePresentation(obj.transform, renderer.sprite, color, kind);
             var collider = createCollider ? obj.AddComponent<BoxCollider2D>() : null;
             if (collider != null) collider.size = Vector2.one;
             var node = obj.AddComponent<PuzzleNode>();
             node.Configure(kind, draggable, position, size, renderer, collider, sequenceIndex);
             nodes.Add(node);
             return node;
+        }
+
+        private void CreateNodePresentation(Transform nodeTransform, Sprite sprite, Color color, NodeKind kind)
+        {
+            if (sprite == null) return;
+
+            var shadow = new GameObject("Shadow");
+            shadow.transform.SetParent(nodeTransform, false);
+            shadow.transform.localPosition = new Vector3(0.12f, -0.14f, 0f);
+            var shadowRenderer = shadow.AddComponent<SpriteRenderer>();
+            shadowRenderer.sprite = sprite;
+            shadowRenderer.color = new Color(0f, 0.01f, 0.05f, 0.48f);
+            shadowRenderer.sortingOrder = 1;
+
+            var glow = new GameObject("Glow");
+            glow.transform.SetParent(nodeTransform, false);
+            glow.transform.localScale = Vector3.one * GlowScaleFor(kind);
+            var glowRenderer = glow.AddComponent<SpriteRenderer>();
+            glowRenderer.sprite = glowSprite != null ? glowSprite : squareSprite;
+            glowRenderer.color = GlowColorFor(kind, color);
+            glowRenderer.sortingOrder = 2;
+            var pulse = glow.AddComponent<BoardGlowPulse>();
+            pulse.Configure(kind == NodeKind.Door ? 0.055f : 0.095f, kind.GetHashCode() * 0.57f);
+        }
+
+        private static float GlowScaleFor(NodeKind kind)
+        {
+            return kind switch
+            {
+                NodeKind.Door => 1.75f,
+                NodeKind.BlockTarget => 1.55f,
+                NodeKind.SequenceStep => 1.42f,
+                _ => 1.35f
+            };
+        }
+
+        private static Color GlowColorFor(NodeKind kind, Color fallback)
+        {
+            var signal = kind switch
+            {
+                NodeKind.Key => Amber,
+                NodeKind.Switch => Teal,
+                NodeKind.RevealTrigger => Teal,
+                NodeKind.SequenceStep => Amber,
+                NodeKind.Door => Purple,
+                _ => fallback
+            };
+            return new Color(signal.r, signal.g, signal.b, kind == NodeKind.Decoy ? 0.13f : 0.30f);
         }
 
         private static bool UsesGameplayArt(NodeKind kind)
@@ -589,7 +659,16 @@ namespace ImpossibleLevels.Levels
             var gameplaySprite = ArtAssetLibrary.GetGameplaySprite("Player");
             renderer.sprite = gameplaySprite ?? squareSprite;
             renderer.color = gameplaySprite != null ? Color.white : new Color(0.12f, 0.82f, 0.95f, 1f);
-            renderer.sortingOrder = 3;
+            renderer.sortingOrder = 5;
+
+            var playerGlow = new GameObject("PlayerGlow");
+            playerGlow.transform.SetParent(obj.transform, false);
+            playerGlow.transform.localScale = Vector3.one * 1.48f;
+            var glowRenderer = playerGlow.AddComponent<SpriteRenderer>();
+            glowRenderer.sprite = glowSprite != null ? glowSprite : squareSprite;
+            glowRenderer.color = new Color(0.12f, 0.82f, 0.95f, 0.28f);
+            glowRenderer.sortingOrder = 3;
+            playerGlow.AddComponent<BoardGlowPulse>().Configure(0.08f, 0.3f);
         }
 
         private void ClearBoard()
@@ -621,6 +700,26 @@ namespace ImpossibleLevels.Levels
             texture.SetPixel(0, 0, Color.white);
             texture.Apply();
             return Sprite.Create(texture, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);
+        }
+
+        private static Sprite CreateGlowSprite()
+        {
+            const int size = 48;
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            texture.wrapMode = TextureWrapMode.Clamp;
+            for (var y = 0; y < size; y++)
+            {
+                for (var x = 0; x < size; x++)
+                {
+                    var dx = (x + 0.5f) / size * 2f - 1f;
+                    var dy = (y + 0.5f) / size * 2f - 1f;
+                    var distance = Mathf.Clamp01(new Vector2(dx, dy).magnitude);
+                    var alpha = Mathf.Pow(1f - distance, 2.4f) * 0.78f;
+                    texture.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
+                }
+            }
+            texture.Apply();
+            return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
         }
 
         private enum DoorState
@@ -795,6 +894,30 @@ namespace ImpossibleLevels.Levels
             private void ResetColor()
             {
                 if (nodeRenderer != null) nodeRenderer.color = CurrentVisualColor();
+            }
+        }
+
+        private sealed class BoardGlowPulse : MonoBehaviour
+        {
+            private float amplitude;
+            private float phase;
+            private Vector3 baseScale;
+
+            public void Configure(float pulseAmplitude, float pulsePhase)
+            {
+                amplitude = pulseAmplitude;
+                phase = pulsePhase;
+            }
+
+            private void Awake()
+            {
+                baseScale = transform.localScale;
+            }
+
+            private void Update()
+            {
+                var wave = (Mathf.Sin(Time.unscaledTime * 2.4f + phase) + 1f) * 0.5f;
+                transform.localScale = baseScale * (1f + wave * amplitude);
             }
         }
     }
