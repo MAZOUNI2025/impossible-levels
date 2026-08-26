@@ -302,8 +302,8 @@ namespace ImpossibleLevels.Core
 
             if (HookIntroController.ShouldShowTutorial(selectedLevel))
             {
-                var tutorialRule = selectedEntry.mechanics != null ? selectedEntry.mechanics.rule : GameplayRule.KeyDoor;
-                BuildTutorial(root, selectedLevel, tutorialRule);
+                var tutorialConfig = selectedEntry.mechanics;
+                BuildTutorial(root, selectedLevel, tutorialConfig);
             }
 
             var pausePanel = AddPanel(root, new Color(0.035f, 0.055f, 0.14f, 0.98f), new Vector2(0.5f, 0.50f), new Vector2(0.72f, 0.42f));
@@ -357,8 +357,9 @@ namespace ImpossibleLevels.Core
             failPanel.gameObject.SetActive(false);
         }
 
-        private void BuildTutorial(RectTransform root, int levelId, GameplayRule rule)
+        private void BuildTutorial(RectTransform root, int levelId, LevelMechanicConfig config)
         {
+            var rule = config != null ? config.rule : GameplayRule.KeyDoor;
             var overlay = CreateScreen("TutorialCue_" + levelId.ToString("00"), root);
             var canvasGroup = overlay.gameObject.AddComponent<CanvasGroup>();
             canvasGroup.alpha = 0f;
@@ -370,7 +371,10 @@ namespace ImpossibleLevels.Core
             var card = AddPanel(overlay, new Color(0.06f, 0.08f, 0.16f, 0.98f), new Vector2(0.5f, 0.665f), new Vector2(0.76f, 0.14f));
             var titleKey = levelId == 1 ? "TUTORIAL_TITLE" : "TUTORIAL_RULE_TITLE";
             AddTextRelative(card, LocalizationService.Get(titleKey), new Vector2(0.5f, 0.82f), new Vector2(0.74f, 0.20f), 20, TutorialAccentColor(rule), TextAlignmentOptions.Center);
-            var message = AddTextRelative(card, LocalizationService.Get(HookIntroController.GetTutorialBodyKey(rule)), new Vector2(0.5f, 0.51f), new Vector2(0.58f, 0.32f), 19, Color.white, TextAlignmentOptions.Center);
+            var messageText = config != null
+                ? LocalizationService.GetLevelHint(levelId, config.hint)
+                : LocalizationService.Get(HookIntroController.GetTutorialBodyKey(rule));
+            var message = AddTextRelative(card, messageText, new Vector2(0.5f, 0.51f), new Vector2(0.58f, 0.32f), 19, Color.white, TextAlignmentOptions.Center);
             var primaryVisual = AddTutorialVisual(card, HookIntroController.GetPrimaryVisualKey(rule), TutorialPrimaryColor(rule), new Vector2(0.14f, 0.52f), new Vector2(0.10f, 0.44f));
             var secondaryVisual = AddTutorialVisual(card, HookIntroController.GetSecondaryVisualKey(rule), new Color(0.55f, 0.22f, 1f), new Vector2(0.86f, 0.52f), new Vector2(0.12f, 0.52f));
             AddTextRelative(card, LocalizationService.Get(HookIntroController.GetPrimaryLabelKey(rule)), new Vector2(0.14f, 0.17f), new Vector2(0.28f, 0.18f), 12, TutorialPrimaryColor(rule), TextAlignmentOptions.Center);

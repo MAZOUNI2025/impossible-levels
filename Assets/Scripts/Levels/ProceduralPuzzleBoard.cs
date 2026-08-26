@@ -250,41 +250,72 @@ namespace ImpossibleLevels.Levels
             CreateBlock("TopRail", new Vector2(0f, 5.35f), new Vector2(7.4f, 0.25f), Slate, -1);
             CreatePlayerVisual(new Vector2(-2.65f, -3.85f), new Vector2(0.95f, 1.15f));
 
-            var variation = (mechanicConfig.deterministicSeed % 8 + 8) % 8;
-            var keyPosition = new Vector2(-2.4f + (variation % 4) * 1.2f, 1.35f - (variation / 4) * 1.35f);
-            var doorPosition = new Vector2(2.45f, -3.7f + (variation % 2) * 0.9f);
-            var keyIsVisible = mechanicConfig.rule != GameplayRule.RevealObservation;
+            var variation = (mechanicConfig.layoutVariant % 8 + 8) % 8;
+            var keyPosition = KeyPositionFor(variation);
+            if (mechanicConfig.requiresBlockPlacement && keyPosition.y < 1f) keyPosition.y = 1.35f;
+            var doorPosition = DoorPositionFor(variation);
+            var keyIsVisible = !mechanicConfig.requiresReveal;
             var key = CreateNode("Key", keyPosition, new Vector2(0.78f, 0.78f), Amber, NodeKind.Key, false);
             hiddenKeyNode = keyIsVisible ? null : key;
             if (!keyIsVisible) key.SetVisible(false);
             doorNode = CreateNode("Door", doorPosition, new Vector2(1.35f, 2.15f), Purple, NodeKind.Door, false);
             doorNode.SetDoorState(DoorState.Locked);
 
-            switch (mechanicConfig.rule)
+            if (mechanicConfig.requiresBlockPlacement)
             {
-                case GameplayRule.DragPlace:
-                    var targetX = -1.4f + (mechanicConfig.variationIndex % 3) * 1.4f;
-                    var targetY = -1.45f + (mechanicConfig.variationIndex % 2) * 1.1f;
-                    blockTargetPosition = new Vector2(targetX, targetY);
-                    CreateNode("BlockTarget", blockTargetPosition, new Vector2(1.35f, 0.95f), Disabled, NodeKind.BlockTarget, false, false);
-                    var blockStart = new Vector2(targetX > 0f ? -2.5f : 2.0f, targetY + 1.35f);
-                    CreateNode("MovableBlock", blockStart, new Vector2(1.2f, 0.8f), Slate, NodeKind.Block, true);
-                    break;
-                case GameplayRule.SwitchState:
-                    var switchX = -1.8f + (mechanicConfig.variationIndex % 4) * 1.2f;
-                    switchNode = CreateNode("Switch", new Vector2(switchX, 2.65f), new Vector2(1.1f, 0.35f), Teal, NodeKind.Switch, false);
-                    break;
-                case GameplayRule.RevealObservation:
-                    var revealX = mechanicConfig.deterministicSeed % 2 == 0 ? -1.8f : 1.8f;
-                    CreateNode("RevealTrigger", new Vector2(revealX, 2.65f), new Vector2(1.1f, 0.65f), Teal, NodeKind.RevealTrigger, false);
-                    break;
-                case GameplayRule.FairSequence:
-                    CreateSequenceNodes();
-                    break;
-                case GameplayRule.KeyDoor:
-                    CreateLegacyDecorations(index);
-                    break;
+                var targetX = -1.4f + (mechanicConfig.layoutVariant % 3) * 1.4f;
+                var targetY = -1.45f + ((mechanicConfig.layoutVariant / 2) % 2) * 1.1f;
+                blockTargetPosition = new Vector2(targetX, targetY);
+                CreateNode("BlockTarget", blockTargetPosition, new Vector2(1.35f, 0.95f), Disabled, NodeKind.BlockTarget, false, false);
+                var blockStart = new Vector2(targetX > 0f ? -2.5f : 2.0f, targetY + 1.35f);
+                CreateNode("MovableBlock", blockStart, new Vector2(1.2f, 0.8f), Slate, NodeKind.Block, true);
             }
+
+            if (mechanicConfig.requiresSwitch)
+            {
+                var switchX = mechanicConfig.requiresReveal
+                    ? -2.0f
+                    : -1.8f + (mechanicConfig.layoutVariant % 4) * 1.2f;
+                var switchY = mechanicConfig.requiresSequence ? 2.30f : 2.65f;
+                switchNode = CreateNode("Switch", new Vector2(switchX, switchY), new Vector2(1.1f, 0.65f), Teal, NodeKind.Switch, false);
+            }
+
+            if (mechanicConfig.requiresReveal)
+            {
+                var revealX = mechanicConfig.requiresSwitch
+                    ? 2.0f
+                    : mechanicConfig.deterministicSeed % 2 == 0 ? -1.8f : 1.8f;
+                var revealY = mechanicConfig.requiresSequence ? 2.30f : 2.65f;
+                CreateNode("RevealTrigger", new Vector2(revealX, revealY), new Vector2(0.95f, 0.95f), Teal, NodeKind.RevealTrigger, false);
+            }
+
+            if (mechanicConfig.requiresSequence) CreateSequenceNodes();
+            CreateLegacyDecorations(index);
+        }
+
+        private Vector2 KeyPositionFor(int variation)
+        {
+            return variation switch
+            {
+                0 => new Vector2(-2.4f, 1.35f),
+                1 => new Vector2(-1.15f, 1.35f),
+                2 => new Vector2(0.10f, 1.35f),
+                3 => new Vector2(1.25f, 1.35f),
+                4 => new Vector2(-1.95f, 0.05f),
+                5 => new Vector2(-0.65f, 0.05f),
+                6 => new Vector2(0.65f, 0.05f),
+                _ => new Vector2(1.75f, 0.05f)
+            };
+        }
+
+        private Vector2 DoorPositionFor(int variation)
+        {
+            return (variation % 3) switch
+            {
+                0 => new Vector2(2.45f, -3.7f),
+                1 => new Vector2(2.45f, -2.8f),
+                _ => new Vector2(2.45f, -3.25f)
+            };
         }
 
         private void CreateSequenceNodes()
@@ -292,9 +323,10 @@ namespace ImpossibleLevels.Levels
             var sequenceLength = Mathf.Clamp(mechanicConfig.sequenceLength, 1, 5);
             var direction = mechanicConfig.deterministicSeed % 2 == 0 ? 1f : -1f;
             var startX = sequenceLength == 5 ? -2.6f : -1.9f;
+            var sequenceY = mechanicConfig.requiresSwitch || mechanicConfig.requiresReveal ? 3.55f : 3.0f;
             for (var i = 0; i < sequenceLength; i++)
             {
-                var position = new Vector2(startX + direction * i * 1.3f, 3.0f - (mechanicConfig.variationIndex % 2) * 0.55f);
+                var position = new Vector2(startX + direction * i * 1.3f, sequenceY - (mechanicConfig.variationIndex % 2) * 0.30f);
                 sequenceNodes.Add(CreateNode("SequenceStep_" + (i + 1), position, new Vector2(0.72f, 0.72f), Teal, NodeKind.SequenceStep, false, true, i));
             }
         }
@@ -304,8 +336,8 @@ namespace ImpossibleLevels.Levels
             var decoyCount = mechanicConfig != null ? mechanicConfig.decoyCount : Mathf.Min(3, Mathf.Max(0, (index - 1) / 5));
             for (var i = 0; i < decoyCount; i++)
             {
-                var x = -2.3f + (i % 3) * 2.0f;
-                var y = -1.1f + (i / 3) * 1.45f;
+                var x = -1.9f + (i % 3) * 1.9f;
+                var y = -2.55f + (i / 3) * 0.72f;
                 CreateNode("Decoy_" + i, new Vector2(x, y), new Vector2(0.75f, 0.75f), Teal, NodeKind.Decoy, i % 2 == 1);
             }
         }
@@ -342,14 +374,14 @@ namespace ImpossibleLevels.Levels
                     }
                     break;
                 case NodeKind.Switch:
-                    if (mechanicConfig.rule != GameplayRule.SwitchState) return;
+                    if (!mechanicConfig.requiresSwitch) return;
                     switchOn = !switchOn;
                     node.SetToggled(switchOn);
                     node.PulseSuccess();
                     UpdateDoorState();
                     break;
                 case NodeKind.RevealTrigger:
-                    if (mechanicConfig.rule != GameplayRule.RevealObservation || revealActive) return;
+                    if (!mechanicConfig.requiresReveal || revealActive) return;
                     revealActive = true;
                     if (hiddenKeyNode != null) hiddenKeyNode.SetVisible(true);
                     node.SetToggled(true);
@@ -368,7 +400,7 @@ namespace ImpossibleLevels.Levels
 
         private void HandleSequenceStep(PuzzleNode node)
         {
-            if (!hasKey || mechanicConfig.rule != GameplayRule.FairSequence)
+            if (!hasKey || !mechanicConfig.requiresSequence)
             {
                 node.PulseInvalid();
                 return;
@@ -393,7 +425,7 @@ namespace ImpossibleLevels.Levels
 
         private void HandleDrop(PuzzleNode node, Vector2 position)
         {
-            if (node == null || node.Kind != NodeKind.Block || mechanicConfig.rule != GameplayRule.DragPlace) return;
+            if (node == null || node.Kind != NodeKind.Block || !mechanicConfig.requiresBlockPlacement) return;
             if (Vector2.Distance(position, blockTargetPosition) < 1.0f)
             {
                 node.transform.position = blockTargetPosition;
@@ -413,15 +445,12 @@ namespace ImpossibleLevels.Levels
 
         private bool CanComplete()
         {
-            if (!hasKey) return false;
-            return mechanicConfig.rule switch
-            {
-                GameplayRule.DragPlace => blockPlaced,
-                GameplayRule.SwitchState => switchOn,
-                GameplayRule.RevealObservation => revealActive,
-                GameplayRule.FairSequence => sequenceProgress >= sequenceNodes.Count && sequenceNodes.Count > 0,
-                _ => true
-            };
+            if (!hasKey || mechanicConfig == null) return false;
+            if (mechanicConfig.requiresBlockPlacement && !blockPlaced) return false;
+            if (mechanicConfig.requiresSwitch && !switchOn) return false;
+            if (mechanicConfig.requiresReveal && !revealActive) return false;
+            if (mechanicConfig.requiresSequence && (sequenceNodes.Count == 0 || sequenceProgress < sequenceNodes.Count)) return false;
+            return true;
         }
 
         private void UpdateDoorState()
@@ -467,19 +496,17 @@ namespace ImpossibleLevels.Levels
         private PuzzleNode FindHintTarget()
         {
             if (mechanicConfig == null) return null;
-            switch (mechanicConfig.rule)
+            if (!hasKey)
             {
-                case GameplayRule.DragPlace:
-                    return FindNodeByKind(NodeKind.Block) ?? FindNodeByKind(NodeKind.Door);
-                case GameplayRule.SwitchState:
-                    return switchOn ? FindNodeByKind(NodeKind.Door) : switchNode;
-                case GameplayRule.RevealObservation:
-                    return revealActive ? FindNodeByKind(NodeKind.Key) : FindNodeByKind(NodeKind.RevealTrigger);
-                case GameplayRule.FairSequence:
-                    return sequenceProgress < sequenceNodes.Count ? sequenceNodes[sequenceProgress] : FindNodeByKind(NodeKind.Door);
-                default:
-                    return FindNodeByKind(NodeKind.Key) ?? FindNodeByKind(NodeKind.Door);
+                return mechanicConfig.requiresReveal && !revealActive
+                    ? FindNodeByKind(NodeKind.RevealTrigger)
+                    : FindNodeByKind(NodeKind.Key);
             }
+            if (mechanicConfig.requiresReveal && !revealActive) return FindNodeByKind(NodeKind.RevealTrigger);
+            if (mechanicConfig.requiresBlockPlacement && !blockPlaced) return FindNodeByKind(NodeKind.Block);
+            if (mechanicConfig.requiresSwitch && !switchOn) return switchNode;
+            if (mechanicConfig.requiresSequence && sequenceProgress < sequenceNodes.Count) return sequenceNodes[sequenceProgress];
+            return FindNodeByKind(NodeKind.Door);
         }
 
         private PuzzleNode FindNodeByKind(NodeKind kind)
@@ -499,9 +526,9 @@ namespace ImpossibleLevels.Levels
             obj.transform.position = position;
             obj.transform.localScale = new Vector3(size.x, size.y, 1f);
             var renderer = obj.AddComponent<SpriteRenderer>();
-            var gameplaySprite = UsesGameplayArt(kind) ? ArtAssetLibrary.GetGameplaySprite(kind.ToString()) : null;
+            var gameplaySprite = UsesGameplayArt(kind) ? GameplaySpriteFor(kind) : null;
             renderer.sprite = gameplaySprite ?? squareSprite;
-            renderer.color = gameplaySprite != null ? Color.white : color;
+            renderer.color = gameplaySprite != null ? SpriteTintFor(kind, color) : color;
             renderer.sortingOrder = 2;
             var collider = createCollider ? obj.AddComponent<BoxCollider2D>() : null;
             if (collider != null) collider.size = Vector2.one;
@@ -513,7 +540,29 @@ namespace ImpossibleLevels.Levels
 
         private static bool UsesGameplayArt(NodeKind kind)
         {
-            return kind == NodeKind.Key || kind == NodeKind.Door || kind == NodeKind.Switch || kind == NodeKind.Decoy || kind == NodeKind.Block;
+            return kind == NodeKind.Key || kind == NodeKind.Door || kind == NodeKind.Switch || kind == NodeKind.Decoy || kind == NodeKind.Block || kind == NodeKind.BlockTarget || kind == NodeKind.RevealTrigger || kind == NodeKind.SequenceStep;
+        }
+
+        private static Sprite GameplaySpriteFor(NodeKind kind)
+        {
+            return kind switch
+            {
+                NodeKind.BlockTarget => ArtAssetLibrary.GetGameplaySprite("block"),
+                NodeKind.RevealTrigger => ArtAssetLibrary.GetGameplaySprite("switch"),
+                NodeKind.SequenceStep => ArtAssetLibrary.GetGameplaySprite("star_filled"),
+                _ => ArtAssetLibrary.GetGameplaySprite(kind.ToString())
+            };
+        }
+
+        private static Color SpriteTintFor(NodeKind kind, Color fallback)
+        {
+            return kind switch
+            {
+                NodeKind.BlockTarget => new Color(fallback.r, fallback.g, fallback.b, 0.60f),
+                NodeKind.RevealTrigger => Teal,
+                NodeKind.SequenceStep => new Color(1f, 0.78f, 0.24f, 1f),
+                _ => Color.white
+            };
         }
 
         private void CreateBlock(string name, Vector2 position, Vector2 size, Color color, int sortingOrder)
@@ -525,7 +574,7 @@ namespace ImpossibleLevels.Levels
             var renderer = obj.AddComponent<SpriteRenderer>();
             var gameplaySprite = ArtAssetLibrary.GetGameplaySprite(name);
             renderer.sprite = gameplaySprite ?? squareSprite;
-            renderer.color = gameplaySprite != null ? Color.white : color;
+            renderer.color = gameplaySprite != null ? Color.Lerp(Color.white, color, 0.16f) : color;
             renderer.sortingOrder = sortingOrder;
         }
 
@@ -621,7 +670,7 @@ namespace ImpossibleLevels.Levels
 
             public bool CanDragFor(LevelMechanicConfig config)
             {
-                return canDrag && config != null && config.rule == GameplayRule.DragPlace;
+                return canDrag && config != null && config.requiresBlockPlacement;
             }
 
             public bool Contains(Vector2 point)
