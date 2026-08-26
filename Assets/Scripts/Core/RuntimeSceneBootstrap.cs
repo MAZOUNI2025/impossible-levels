@@ -103,7 +103,7 @@ namespace ImpossibleLevels.Core
             var menuCompleted = 0;
             for (var levelIndex = 1; levelIndex <= TotalLevels; levelIndex++)
             {
-                if (menuProgression != null && menuProgression.GetLevelStars(levelIndex) > 0) menuCompleted++;
+                if (menuProgression != null && menuProgression.GetStars(levelIndex) > 0) menuCompleted++;
             }
             var menuCoins = menuProgression != null ? Mathf.Max(0, menuProgression.Coins) : 0;
             AddStatusBadge(mainScreen, LocalizationService.Format("MAP_PROGRESS", menuCompleted, TotalLevels), ArtAssetLibrary.GetGameplaySprite("star_filled"), new Vector2(0.28f, 0.94f), new Vector2(0.38f, 0.052f), new Color(0.10f, 0.82f, 0.78f));
