@@ -14,6 +14,7 @@ namespace ImpossibleLevels.Core
         private Canvas canvas;
         private Camera gameplayCamera;
         private static TMP_FontAsset runtimeFontAsset;
+        private static TMP_FontAsset runtimeLatinFontAsset;
 
         private void Awake()
         {
@@ -93,6 +94,10 @@ namespace ImpossibleLevels.Core
             AddPanel(mainScreen, new Color(0.55f, 0.22f, 1f, 0.24f), new Vector2(0.5f, 0.285f), new Vector2(0.44f, 0.004f));
             AddImagePanel(mainScreen, ArtAssetLibrary.GetGameplaySprite("key"), new Color(1f, 0.78f, 0.24f, 0.30f), new Vector2(0.18f, 0.565f), new Vector2(0.11f, 0.085f), true);
             AddImagePanel(mainScreen, ArtAssetLibrary.GetGameplaySprite("door"), new Color(0.55f, 0.22f, 1f, 0.18f), new Vector2(0.82f, 0.575f), new Vector2(0.15f, 0.18f), true);
+            var menuCard = AddPanel(mainScreen, new Color(0.02f, 0.035f, 0.105f, 0.86f), new Vector2(0.5f, 0.405f), new Vector2(0.72f, 0.59f));
+            var menuCardOutline = menuCard.gameObject.AddComponent<Outline>();
+            menuCardOutline.effectColor = new Color(0.10f, 0.82f, 0.78f, 0.35f);
+            menuCardOutline.effectDistance = new Vector2(3f, 3f);
 
             var title = AddText(mainScreen, LocalizationService.Get("GAME_TITLE"), new Vector2(0.5f, 0.835f), new Vector2(0.92f, 0.085f), 56, Color.white, TextAlignmentOptions.Center);
             AddTextSurfaceEffect(title, new Color(0f, 0f, 0f, 0.62f), new Vector2(0f, -4f));
@@ -143,7 +148,10 @@ namespace ImpossibleLevels.Core
             }
 
             AddImagePanel(screen, ArtAssetLibrary.GetLevelThumbnail(currentLevel), new Color(1f, 1f, 1f, 0.045f), new Vector2(0.5f, 0.50f), new Vector2(0.86f, 0.58f), true);
-            AddPanel(screen, new Color(0.10f, 0.82f, 0.78f, 0.12f), new Vector2(0.5f, 0.93f), new Vector2(0.92f, 0.15f));
+            var mapHeader = AddPanel(screen, new Color(0.02f, 0.035f, 0.105f, 0.94f), new Vector2(0.5f, 0.93f), new Vector2(0.92f, 0.15f));
+            var mapHeaderOutline = mapHeader.gameObject.AddComponent<Outline>();
+            mapHeaderOutline.effectColor = new Color(0.10f, 0.82f, 0.78f, 0.38f);
+            mapHeaderOutline.effectDistance = new Vector2(2f, 2f);
             AddText(screen, LocalizationService.Get("MAP_TITLE"), new Vector2(0.5f, 0.962f), new Vector2(0.80f, 0.050f), 40, Color.white, TextAlignmentOptions.Center);
             AddText(screen, LocalizationService.Get("MAP_SUBTITLE"), new Vector2(0.5f, 0.918f), new Vector2(0.88f, 0.030f), 15, new Color(0.10f, 0.82f, 0.78f), TextAlignmentOptions.Center);
 
@@ -560,14 +568,54 @@ namespace ImpossibleLevels.Core
         private static TMP_FontAsset ResolveFontAsset()
         {
             if (runtimeFontAsset != null) return runtimeFontAsset;
+
+            // Project TMP defaults are not guaranteed to be included in an Android
+            // player. Ship both families and connect the Latin asset as a fallback;
+            // Noto Sans Arabic intentionally does not contain the full Latin alphabet.
+            var arabicFont = Resources.Load<Font>("Fonts/NotoSansArabic-Regular");
+            var latinFont = Resources.Load<Font>("Fonts/NotoSans-Regular");
+            if (arabicFont != null)
+            {
+                try
+                {
+                    runtimeFontAsset = TMP_FontAsset.CreateFontAsset(arabicFont);
+                    if (runtimeFontAsset != null)
+                    {
+                        runtimeFontAsset.atlasPopulationMode = AtlasPopulationMode.Dynamic;
+                        if (latinFont != null)
+                        {
+                            runtimeLatinFontAsset = TMP_FontAsset.CreateFontAsset(latinFont);
+                            if (runtimeLatinFontAsset != null)
+                            {
+                                runtimeLatinFontAsset.atlasPopulationMode = AtlasPopulationMode.Dynamic;
+                                if (!runtimeFontAsset.fallbackFontAssetTable.Contains(runtimeLatinFontAsset))
+                                {
+                                    runtimeFontAsset.fallbackFontAssetTable.Add(runtimeLatinFontAsset);
+                                }
+                            }
+                        }
+                        return runtimeFontAsset;
+                    }
+                }
+                catch (System.Exception exception)
+                {
+                    Debug.LogWarning("IMPOSSIBLE LEVELS could not create the shipped Arabic/Latin TMP fonts: " + exception.Message);
+                }
+            }
+
             if (TMP_Settings.instance != null) runtimeFontAsset = TMP_Settings.defaultFontAsset;
             if (runtimeFontAsset != null) return runtimeFontAsset;
 
             var builtInFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
-            if (builtInFont == null) return null;
+            if (builtInFont == null)
+            {
+                Debug.LogError("IMPOSSIBLE LEVELS has no usable TMP font asset for runtime UI text.");
+                return null;
+            }
             try
             {
                 runtimeFontAsset = TMP_FontAsset.CreateFontAsset(builtInFont);
+                if (runtimeFontAsset != null) runtimeFontAsset.atlasPopulationMode = AtlasPopulationMode.Dynamic;
             }
             catch (System.Exception exception)
             {
@@ -661,7 +709,8 @@ namespace ImpossibleLevels.Core
                 labelText.rectTransform.anchorMax = new Vector2(0.96f, 0.34f);
                 labelText.rectTransform.sizeDelta = Vector2.zero;
                 labelText.margin = new Vector4(8f, 4f, 8f, 4f);
-                labelText.fontSize = Mathf.Max(17f, labelText.fontSize * 0.72f);
+                labelText.fontSize = Mathf.Max(18f, labelText.fontSize * 0.78f);
+                labelText.rectTransform.SetAsLastSibling();
             }
             return button;
         }
@@ -682,7 +731,8 @@ namespace ImpossibleLevels.Core
                 labelText.rectTransform.anchorMax = new Vector2(0.96f, 0.34f);
                 labelText.rectTransform.sizeDelta = Vector2.zero;
                 labelText.margin = new Vector4(6f, 4f, 6f, 4f);
-                labelText.fontSize = Mathf.Max(13f, labelText.fontSize * 0.58f);
+                labelText.fontSize = Mathf.Max(14f, labelText.fontSize * 0.64f);
+                labelText.rectTransform.SetAsLastSibling();
             }
             return button;
         }
@@ -900,14 +950,18 @@ namespace ImpossibleLevels.Core
         private static void ConfigureText(TMP_Text text, float fontSize, Color color, TextAlignmentOptions alignment)
         {
             text.fontSize = fontSize;
-            text.fontSizeMin = Mathf.Max(12f, fontSize * 0.62f);
+            text.fontSizeMin = Mathf.Max(14f, fontSize * 0.68f);
             text.fontSizeMax = fontSize;
             text.enableAutoSizing = true;
             text.color = color;
             text.alignment = alignment;
             text.textWrappingMode = TextWrappingModes.Normal;
             text.overflowMode = TextOverflowModes.Ellipsis;
+            text.raycastTarget = false;
+            text.enableKerning = true;
+            AddTextSurfaceEffect(text, new Color(0f, 0f, 0f, 0.46f), new Vector2(0f, -2f));
             LocalizationService.ApplyTo(text);
+            text.ForceMeshUpdate();
         }
 
         private static void ConfigureButton(Button button, Color color)
