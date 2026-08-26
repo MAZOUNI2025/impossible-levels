@@ -40,6 +40,16 @@ namespace ImpossibleLevels.Levels
         private PuzzleNode switchNode;
         private DoorState doorState = DoorState.Locked;
         private readonly List<PuzzleNode> sequenceNodes = new();
+        private PuzzleNode lastHintNode;
+        private int hintStage;
+        private Transform playerVisual;
+        private GameObject hintVisualRoot;
+        private GameObject celebrationVisualRoot;
+        private Coroutine hintVisualRoutine;
+        private Coroutine celebrationRoutine;
+        private Vector3 cameraPositionBeforeCelebration;
+        private float cameraSizeBeforeCelebration;
+        private bool cameraPresentationActive;
 
         // Presentation-only notifications; gameplay and progression remain authoritative below.
         public event Action<int, int, int> CompletionSummaryReady;
@@ -90,6 +100,7 @@ namespace ImpossibleLevels.Levels
 
             if (runtime != null) runtime.StateChanged -= OnRuntimeStateChanged;
             ResetPointerState(true);
+            StopPresentationRoutines();
         }
 
         private void Start()
@@ -120,23 +131,32 @@ namespace ImpossibleLevels.Levels
             BuildLevel(levelIndex);
         }
 
-        public void UseHint()
+        public bool UseHint()
         {
-            if (solved) return;
+            if (solved) return false;
             var progression = FindFirstObjectByType<ProgressionService>();
             if (progression != null && progression.Coins < HintCost)
             {
                 HintUnavailable?.Invoke(HintCost);
                 if (AudioDirector.Instance != null) AudioDirector.Instance.Invalid();
-                return;
+                return false;
             }
 
-            hintCount++;
-            if (AudioDirector.Instance != null) AudioDirector.Instance.Hint();
-            HapticsFeedback.TryPulse();
             var hintedNode = FindHintTarget();
-            if (hintedNode != null) hintedNode.PulseHint();
+            if (hintedNode == null) return false;
+            hintCount++;
+            if (hintedNode != lastHintNode)
+            {
+                lastHintNode = hintedNode;
+                hintStage = 1;
+            }
+            else hintStage = Mathf.Clamp(hintStage + 1, 1, 3);
+
+            if (AudioDirector.Instance != null) AudioDirector.Instance.HintAt(hintedNode.transform.position, 0.92f + hintStage * 0.08f);
+            HapticsFeedback.TryPulse();
+            ShowProgressiveHint(hintedNode, hintStage);
             if (progression != null) progression.SpendCoins(HintCost);
+            return true;
         }
 
         private void OnRuntimeStateChanged(LevelState state)
@@ -230,9 +250,12 @@ namespace ImpossibleLevels.Levels
             solved = false;
             sequenceProgress = 0;
             hintCount = 0;
+            lastHintNode = null;
+            hintStage = 0;
             hiddenKeyNode = null;
             doorNode = null;
             switchNode = null;
+            playerVisual = null;
             doorState = DoorState.Locked;
             sequenceNodes.Clear();
             ResetPointerState(true);
@@ -365,7 +388,6 @@ namespace ImpossibleLevels.Levels
         private void HandleTap(PuzzleNode node)
         {
             if (node == null || solved || runtime == null || runtime.State != LevelState.Playing) return;
-            if (AudioDirector.Instance != null) AudioDirector.Instance.Tap();
 
             switch (node.Kind)
             {
@@ -374,7 +396,7 @@ namespace ImpossibleLevels.Levels
                     if (hasKey) return;
                     hasKey = true;
                     node.CollectFeedbackAndHide();
-                    if (AudioDirector.Instance != null) AudioDirector.Instance.KeyPickup();
+                    if (AudioDirector.Instance != null) AudioDirector.Instance.KeyPickupAt(node.transform.position, 1.04f);
                     HapticsFeedback.TryPulse();
                     UpdateDoorState();
                     break;
@@ -383,13 +405,12 @@ namespace ImpossibleLevels.Levels
                     {
                         doorState = DoorState.Open;
                         node.SetDoorState(doorState);
-                        node.PulseSuccess();
                         Complete();
                     }
                     else
                     {
                         node.PulseInvalid();
-                        if (AudioDirector.Instance != null) AudioDirector.Instance.Invalid();
+                        if (AudioDirector.Instance != null) AudioDirector.Instance.InvalidAt(node.transform.position, 0.9f);
                         HapticsFeedback.TryPulse();
                     }
                     break;
@@ -398,6 +419,7 @@ namespace ImpossibleLevels.Levels
                     switchOn = !switchOn;
                     node.SetToggled(switchOn);
                     node.PulseSuccess();
+                    if (AudioDirector.Instance != null) AudioDirector.Instance.TapAt(node.transform.position, switchOn ? 0.92f : 0.82f);
                     UpdateDoorState();
                     break;
                 case NodeKind.RevealTrigger:
@@ -406,6 +428,7 @@ namespace ImpossibleLevels.Levels
                     if (hiddenKeyNode != null) hiddenKeyNode.SetVisible(true);
                     node.SetToggled(true);
                     node.PulseSuccess();
+                    if (AudioDirector.Instance != null) AudioDirector.Instance.TapAt(node.transform.position, 1.10f);
                     UpdateDoorState();
                     break;
                 case NodeKind.SequenceStep:
@@ -413,7 +436,7 @@ namespace ImpossibleLevels.Levels
                     break;
                 case NodeKind.Decoy:
                     node.PulseInvalid();
-                    if (AudioDirector.Instance != null) AudioDirector.Instance.Invalid();
+                    if (AudioDirector.Instance != null) AudioDirector.Instance.InvalidAt(node.transform.position, 1.16f);
                     break;
             }
         }
@@ -430,6 +453,7 @@ namespace ImpossibleLevels.Levels
             {
                 node.SetToggled(true);
                 node.PulseSuccess();
+                if (AudioDirector.Instance != null) AudioDirector.Instance.TapAt(node.transform.position, 1.16f + node.SequenceIndex * 0.05f);
                 sequenceProgress++;
                 UpdateDoorState();
             }
@@ -438,7 +462,7 @@ namespace ImpossibleLevels.Levels
                 sequenceProgress = 0;
                 for (var i = 0; i < sequenceNodes.Count; i++) sequenceNodes[i].SetToggled(false);
                 node.PulseInvalid();
-                if (AudioDirector.Instance != null) AudioDirector.Instance.Invalid();
+                if (AudioDirector.Instance != null) AudioDirector.Instance.InvalidAt(node.transform.position, 1.08f);
                 HapticsFeedback.TryPulse();
             }
         }
@@ -451,14 +475,14 @@ namespace ImpossibleLevels.Levels
                 node.transform.position = blockTargetPosition;
                 node.SetDraggable(false);
                 blockPlaced = true;
-                if (AudioDirector.Instance != null) AudioDirector.Instance.Tap();
+                if (AudioDirector.Instance != null) AudioDirector.Instance.TapAt(node.transform.position, 0.78f);
                 node.PulseSuccess();
                 UpdateDoorState();
             }
             else
             {
                 node.ResetToStart();
-                if (AudioDirector.Instance != null) AudioDirector.Instance.Invalid();
+                if (AudioDirector.Instance != null) AudioDirector.Instance.InvalidAt(node.transform.position, 0.78f);
                 node.PulseInvalid();
             }
         }
@@ -496,9 +520,11 @@ namespace ImpossibleLevels.Levels
             CompletionSummaryReady?.Invoke(levelIndex, stars, grantedReward);
             if (AudioDirector.Instance != null)
             {
-                AudioDirector.Instance.DoorUnlock();
-                AudioDirector.Instance.Success();
+                var doorPosition = doorNode != null ? doorNode.transform.position : Vector3.zero;
+                AudioDirector.Instance.DoorUnlockAt(doorPosition, 0.96f);
+                AudioDirector.Instance.SuccessAt(doorPosition, 1.08f);
             }
+            StartCompletionPresentation();
             HapticsFeedback.TryPulse();
             runtime.CompleteLevel();
         }
@@ -654,6 +680,7 @@ namespace ImpossibleLevels.Levels
             obj.transform.SetParent(levelRoot != null ? levelRoot : transform, false);
             obj.transform.position = position;
             obj.transform.localScale = new Vector3(size.x, size.y, 1f);
+            playerVisual = obj.transform;
 
             var renderer = obj.AddComponent<SpriteRenderer>();
             var gameplaySprite = ArtAssetLibrary.GetGameplaySprite("Player");
@@ -673,9 +700,157 @@ namespace ImpossibleLevels.Levels
 
         private void ClearBoard()
         {
+            StopPresentationRoutines();
             nodes.Clear();
             var root = levelRoot != null ? levelRoot : transform;
             for (var i = root.childCount - 1; i >= 0; i--) Destroy(root.GetChild(i).gameObject);
+        }
+
+        private void ShowProgressiveHint(PuzzleNode target, int stage)
+        {
+            if (target == null) return;
+            if (hintVisualRoot != null) Destroy(hintVisualRoot);
+            if (hintVisualRoutine != null) StopCoroutine(hintVisualRoutine);
+
+            var root = levelRoot != null ? levelRoot : transform;
+            hintVisualRoot = new GameObject("ProgressiveHintVisual");
+            hintVisualRoot.transform.SetParent(root, false);
+            var targetPosition = target.transform.position;
+            CreateHintVisual("HintRing", targetPosition, new Vector3(1.55f, 1.55f, 1f), new Color(1f, 0.78f, 0.24f, 0.58f), 13, 0.12f, 0.2f);
+
+            if (stage >= 2)
+            {
+                var origin = playerVisual != null ? playerVisual.position : new Vector3(-2.65f, -3.85f, 0f);
+                for (var i = 1; i <= 3; i++)
+                {
+                    var markerPosition = Vector3.Lerp(origin, targetPosition, i / 4f);
+                    CreateHintVisual("HintPathDot_" + i, markerPosition, Vector3.one * 0.22f, new Color(0.10f, 0.95f, 0.82f, 0.85f), 12, 0.08f, i * 0.45f);
+                }
+            }
+
+            if (stage >= 3)
+            {
+                var beamPosition = targetPosition + Vector3.up * 1.15f;
+                CreateHintVisual("HintBeam", beamPosition, new Vector3(0.58f, 2.65f, 1f), new Color(0.10f, 0.95f, 0.82f, 0.25f), 11, 0.06f, 0.1f);
+            }
+
+            target.PulseHint(stage);
+            hintVisualRoutine = StartCoroutine(ClearHintVisualsAfter(2.6f));
+        }
+
+        private void CreateHintVisual(string name, Vector3 position, Vector3 scale, Color color, int sortingOrder, float pulseAmplitude, float pulsePhase)
+        {
+            if (hintVisualRoot == null) return;
+            var visual = new GameObject(name);
+            visual.transform.SetParent(hintVisualRoot.transform, false);
+            visual.transform.position = position;
+            visual.transform.localScale = scale;
+            var renderer = visual.AddComponent<SpriteRenderer>();
+            renderer.sprite = glowSprite != null ? glowSprite : squareSprite;
+            renderer.color = color;
+            renderer.sortingOrder = sortingOrder;
+            visual.AddComponent<BoardGlowPulse>().Configure(pulseAmplitude, pulsePhase);
+        }
+
+        private IEnumerator ClearHintVisualsAfter(float duration)
+        {
+            yield return new WaitForSecondsRealtime(duration);
+            if (hintVisualRoot != null) Destroy(hintVisualRoot);
+            hintVisualRoot = null;
+            hintVisualRoutine = null;
+        }
+
+        private void StartCompletionPresentation()
+        {
+            if (celebrationRoutine != null) StopCoroutine(celebrationRoutine);
+            if (celebrationVisualRoot != null) Destroy(celebrationVisualRoot);
+            if (doorNode != null) doorNode.PlayDoorOpening();
+            celebrationRoutine = StartCoroutine(CompletionPresentationRoutine());
+        }
+
+        private IEnumerator CompletionPresentationRoutine()
+        {
+            var root = levelRoot != null ? levelRoot : transform;
+            celebrationVisualRoot = new GameObject("DoorCelebrationVisual");
+            celebrationVisualRoot.transform.SetParent(root, false);
+            var origin = doorNode != null ? doorNode.transform.position : Vector3.zero;
+            var shardRenderers = new List<SpriteRenderer>();
+            var shardVelocities = new List<Vector3>();
+            for (var i = 0; i < 14; i++)
+            {
+                var shard = new GameObject("CelebrationShard_" + i);
+                shard.transform.SetParent(celebrationVisualRoot.transform, false);
+                shard.transform.position = origin + new Vector3((i % 4 - 1.5f) * 0.12f, (i % 3 - 1) * 0.08f, 0f);
+                shard.transform.localScale = Vector3.one * (0.13f + (i % 3) * 0.035f);
+                shard.transform.localRotation = Quaternion.Euler(0f, 0f, i * 27f);
+                var renderer = shard.AddComponent<SpriteRenderer>();
+                renderer.sprite = squareSprite;
+                renderer.color = i % 2 == 0 ? new Color(1f, 0.78f, 0.24f, 0.95f) : new Color(0.10f, 0.95f, 0.82f, 0.95f);
+                renderer.sortingOrder = 14;
+                shardRenderers.Add(renderer);
+                var angle = (i / 14f) * Mathf.PI * 2f;
+                shardVelocities.Add(new Vector3(Mathf.Cos(angle) * (1.25f + (i % 3) * 0.16f), Mathf.Sin(angle) * 0.72f + 1.05f, 0f));
+            }
+
+            if (gameplayCamera != null)
+            {
+                cameraPresentationActive = true;
+                cameraPositionBeforeCelebration = gameplayCamera.transform.position;
+                cameraSizeBeforeCelebration = gameplayCamera.orthographicSize;
+            }
+
+            const float duration = 0.88f;
+            var elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                var progress = Mathf.Clamp01(elapsed / duration);
+                for (var i = 0; i < shardRenderers.Count; i++)
+                {
+                    var renderer = shardRenderers[i];
+                    if (renderer == null) continue;
+                    renderer.transform.position += shardVelocities[i] * Time.unscaledDeltaTime;
+                    renderer.transform.Rotate(0f, 0f, 220f * Time.unscaledDeltaTime);
+                    var color = renderer.color;
+                    color.a = Mathf.Lerp(0.95f, 0f, Mathf.SmoothStep(0.45f, 1f, progress));
+                    renderer.color = color;
+                }
+
+                if (gameplayCamera != null && cameraPresentationActive)
+                {
+                    var focus = Mathf.Sin(progress * Mathf.PI);
+                    var cameraTarget = cameraPositionBeforeCelebration + new Vector3(origin.x * 0.12f, origin.y * 0.10f, 0f);
+                    gameplayCamera.transform.position = Vector3.Lerp(cameraPositionBeforeCelebration, cameraTarget, focus);
+                    gameplayCamera.orthographicSize = Mathf.Lerp(cameraSizeBeforeCelebration, cameraSizeBeforeCelebration * 0.92f, focus);
+                }
+                yield return null;
+            }
+
+            RestorePresentationCamera();
+            if (celebrationVisualRoot != null) Destroy(celebrationVisualRoot);
+            celebrationVisualRoot = null;
+            celebrationRoutine = null;
+        }
+
+        private void StopPresentationRoutines()
+        {
+            if (hintVisualRoutine != null) StopCoroutine(hintVisualRoutine);
+            if (celebrationRoutine != null) StopCoroutine(celebrationRoutine);
+            hintVisualRoutine = null;
+            celebrationRoutine = null;
+            if (hintVisualRoot != null) Destroy(hintVisualRoot);
+            if (celebrationVisualRoot != null) Destroy(celebrationVisualRoot);
+            hintVisualRoot = null;
+            celebrationVisualRoot = null;
+            RestorePresentationCamera();
+        }
+
+        private void RestorePresentationCamera()
+        {
+            if (!cameraPresentationActive || gameplayCamera == null) return;
+            gameplayCamera.transform.position = cameraPositionBeforeCelebration;
+            gameplayCamera.orthographicSize = cameraSizeBeforeCelebration;
+            cameraPresentationActive = false;
         }
 
         private bool AllNodesDestroyed()
@@ -839,11 +1014,19 @@ namespace ImpossibleLevels.Levels
                 StartCoroutine(SuccessRoutine());
             }
 
-            public void PulseHint()
+            public void PulseHint(int stage)
             {
                 StopAllCoroutines();
                 CancelInvoke(nameof(ResetColor));
-                StartCoroutine(HintRoutine());
+                StartCoroutine(HintRoutine(Mathf.Clamp(stage, 1, 3)));
+            }
+
+            public void PlayDoorOpening()
+            {
+                if (Kind != NodeKind.Door) return;
+                StopAllCoroutines();
+                CancelInvoke(nameof(ResetColor));
+                StartCoroutine(DoorOpeningRoutine());
             }
 
             public void CollectFeedbackAndHide()
@@ -865,14 +1048,32 @@ namespace ImpossibleLevels.Levels
                 transform.localScale = startScale;
             }
 
-            private IEnumerator HintRoutine()
+            private IEnumerator HintRoutine(int stage)
             {
                 var startScale = transform.localScale;
-                if (nodeRenderer != null) nodeRenderer.color = Color.Lerp(CurrentVisualColor(), Color.white, 0.45f);
-                transform.localScale = startScale * 1.08f;
-                yield return new WaitForSecondsRealtime(0.18f);
+                if (nodeRenderer != null) nodeRenderer.color = Color.Lerp(CurrentVisualColor(), Color.white, 0.30f + stage * 0.12f);
+                transform.localScale = startScale * (1.05f + stage * 0.035f);
+                yield return new WaitForSecondsRealtime(0.22f + stage * 0.07f);
                 if (nodeRenderer != null) nodeRenderer.color = CurrentVisualColor();
                 transform.localScale = startScale;
+            }
+
+            private IEnumerator DoorOpeningRoutine()
+            {
+                var startPosition = transform.position;
+                var startScale = transform.localScale;
+                var elapsed = 0f;
+                const float duration = 0.52f;
+                while (elapsed < duration)
+                {
+                    elapsed += Time.unscaledDeltaTime;
+                    var progress = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / duration));
+                    transform.position = startPosition + Vector3.up * (0.88f * progress);
+                    transform.localScale = Vector3.Lerp(startScale, startScale * 1.06f, Mathf.Sin(progress * Mathf.PI) * 0.45f);
+                    if (nodeRenderer != null) nodeRenderer.color = Color.Lerp(CurrentVisualColor(), new Color(0.25f, 1f, 0.55f), progress);
+                    yield return null;
+                }
+                if (nodeRenderer != null) nodeRenderer.color = new Color(0.25f, 1f, 0.55f);
             }
 
             private IEnumerator CollectRoutine()

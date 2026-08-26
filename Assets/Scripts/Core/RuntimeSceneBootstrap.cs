@@ -325,7 +325,9 @@ namespace ImpossibleLevels.Core
 
             var retryButton = AddButtonRelative(failPanel, LocalizationService.Get("GAME_RETRY"), new Vector2(0.5f, 0.27f), new Vector2(0.58f, 0.18f), new Color(1f, 0.63f, 0.08f), null);
             var continueButton = AddButtonRelative(failPanel, LocalizationService.Get("GAME_CONTINUE"), new Vector2(0.5f, 0.06f), new Vector2(0.58f, 0.12f), new Color(0.10f, 0.82f, 0.78f), null);
-            var hintButton = AddIconButton(root, LocalizationService.Get("GAME_HINT_BUTTON"), "hint", new Vector2(0.5f, 0.085f), new Vector2(0.32f, 0.095f), new Color(0.55f, 0.22f, 1f), board.UseHint);
+            // GameHudController is the single hint-button route: it triggers the board's
+            // paid hint action and only then presents the localized copy.
+            var hintButton = AddIconButton(root, LocalizationService.Get("GAME_HINT_BUTTON"), "hint", new Vector2(0.5f, 0.085f), new Vector2(0.32f, 0.095f), new Color(0.55f, 0.22f, 1f), null);
 
             var router = gameObject.AddComponent<LevelCompletionRouter>();
             AddButtonRelative(successPanel, LocalizationService.Get("GAME_NEXT"), new Vector2(0.5f, 0.23f), new Vector2(0.68f, 0.10f), new Color(1f, 0.63f, 0.08f), router.LoadNextLevel);

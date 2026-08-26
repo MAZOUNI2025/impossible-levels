@@ -92,6 +92,15 @@ namespace ImpossibleLevels.Audio
         public void Failure() => PlaySfx(failure);
         public void Pause() => PlaySfx(pause);
 
+        // Presentation-only variants reuse the curated SFX bank. The user's SFX
+        // preference remains authoritative while each board action has a physical origin.
+        public void TapAt(Vector3 worldPosition, float pitch = 1f) => PlaySpatialSfx(uiTap, worldPosition, pitch);
+        public void InvalidAt(Vector3 worldPosition, float pitch = 1f) => PlaySpatialSfx(invalid, worldPosition, pitch);
+        public void KeyPickupAt(Vector3 worldPosition, float pitch = 1f) => PlaySpatialSfx(keyPickup, worldPosition, pitch);
+        public void DoorUnlockAt(Vector3 worldPosition, float pitch = 1f) => PlaySpatialSfx(doorUnlock, worldPosition, pitch);
+        public void HintAt(Vector3 worldPosition, float pitch = 1f) => PlaySpatialSfx(hint, worldPosition, pitch);
+        public void SuccessAt(Vector3 worldPosition, float pitch = 1f) => PlaySpatialSfx(success, worldPosition, pitch);
+
         private void PlayMusic(AudioClip clip)
         {
             if (musicSource == null || clip == null) return;
@@ -111,6 +120,27 @@ namespace ImpossibleLevels.Audio
         {
             if (sfxSource == null || clip == null || !IsSfxEnabled()) return;
             sfxSource.PlayOneShot(clip);
+        }
+
+        private void PlaySpatialSfx(AudioClip clip, Vector3 worldPosition, float pitch)
+        {
+            if (clip == null || !IsSfxEnabled()) return;
+
+            var effectObject = new GameObject("SpatialSfx");
+            effectObject.transform.position = worldPosition;
+            var source = effectObject.AddComponent<AudioSource>();
+            source.clip = clip;
+            source.playOnAwake = false;
+            source.loop = false;
+            source.spatialBlend = 1f;
+            source.rolloffMode = AudioRolloffMode.Linear;
+            source.minDistance = 1.25f;
+            source.maxDistance = 14f;
+            source.dopplerLevel = 0f;
+            source.volume = 0.72f;
+            source.pitch = Mathf.Clamp(pitch, 0.55f, 1.55f);
+            source.Play();
+            Destroy(effectObject, clip.length / source.pitch + 0.12f);
         }
 
         private bool IsMusicEnabled()

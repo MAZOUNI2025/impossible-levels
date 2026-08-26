@@ -208,10 +208,9 @@ namespace ImpossibleLevels.UI
 
         private void OnHintPressed()
         {
-            if (hintLabel != null)
-            {
-                SetHint(levelHint ?? LocalizationService.Get("GAME_HINT"));
-            }
+            if (puzzleBoard == null) puzzleBoard = FindFirstObjectByType<ProceduralPuzzleBoard>();
+            if (puzzleBoard == null || !puzzleBoard.UseHint()) return;
+            SetHint(levelHint ?? LocalizationService.Get("GAME_HINT"));
         }
 
         private void BindButtonListeners()
